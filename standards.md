@@ -98,7 +98,7 @@ Audience: R novices who copy code verbatim. The code must run as pasted.
 - Exported functions: roxygen title, description, `@param` for every
   argument (with its default), `@return`, runnable `@examples`. `@export`
   only user-facing functions.
-- Never hand-edit generated files (`man/`, `NAMESPACE`, `RcppExports`,
+- Never hand-edit generated files (`man/*.Rd`, `NAMESPACE`, `RcppExports`,
   `stanExports_*`, `R/stanmodels.R`, `docs/`). Edit the source, then run
   `make docs`.
 - Every `data/` object: a `data-raw/` script with a fixed seed, plus

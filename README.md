@@ -237,7 +237,7 @@ All building, testing, and checking goes through the package's Makefile:
 | `make check` | Quick R CMD check | Any time |
 | `make check-full` | Full check: rebuilds vignettes, runs `\donttest` examples | Before a PR |
 | `make bioccheck` | Runs BiocCheck | Before a PR |
-| `make docs` | Regenerates `man/` and `NAMESPACE` from roxygen | After editing roxygen comments |
+| `make docs` | Regenerates `man/*.Rd` and `NAMESPACE` from roxygen | After editing roxygen comments |
 | `make lint` | Runs lintr | Any time |
 
 Using the same commands everywhere means everyone runs checks the same way,
@@ -325,9 +325,12 @@ R idioms.
 - **Function docs:** every exported function has a roxygen title,
   description, `@param` for each argument (with its default), `@return`, and
   examples that run. Only functions users should call get `@export`.
-- **Generated files:** `man/`, `NAMESPACE`, Rcpp and Stan generated code,
-  and the pkgdown site in `docs/` are all generated. Hand edits get
-  overwritten, so edit the source and regenerate (`make docs`).
+- **Generated files:** the `.Rd` files in `man/`, `NAMESPACE`, Rcpp and
+  Stan generated code, and the pkgdown site in `docs/` are all generated.
+  Hand edits get overwritten, so edit the source and regenerate
+  (`make docs`). Other files under `man/` are hand-written and fine to
+  edit, such as example scripts pulled in with `@example man/examples/...`
+  and README images in `man/figures/`.
 - **Example data:** each dataset in `data/` has a script in `data-raw/` that
   recreates it with a fixed seed, so the data can be rebuilt or changed
   later. Datasets are documented in `R/data.R` with `@format`, plus
