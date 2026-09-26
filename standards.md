@@ -53,9 +53,11 @@ Plans and designs go in `dev/plans/`, never `docs/`.
 
 ## Commands
 - Use only Makefile targets: `test`, `test-one FILTER=<pattern>`, `check`,
-  `check-full`, `bioccheck`, `docs`, `lint`.
-- While developing: `test-one`. Before hand-off: `test`. Before a PR:
-  `check-full` and `bioccheck`.
+  `check-full`, `bioccheck`, `docs`, `lint`, `coverage`.
+- Extra targets are allowed only if AGENTS.md lists them. Ask before
+  running any extra target that AGENTS.md doesn't mark as safe.
+- While developing: `test-one`. Before hand-off: `test` and `coverage`.
+  Before a PR: `check-full` and `bioccheck`.
 - If a target is missing, ask. Never substitute raw `R CMD` or `Rscript`,
   even when a skill suggests them.
 - Bioconductor skills: build-check-bioccheck to triage check output (write
@@ -114,7 +116,7 @@ Audience: R novices who copy code verbatim. The code must run as pasted.
 - New functions: test expected results plus error paths
   (`expect_error(..., regexp =)`).
 - The whole suite must pass, not just nearby tests.
-- Tiny fixtures. Coverage must not drop.
+- Tiny fixtures. Coverage (`make coverage`) must not drop.
 - Optional dependencies (for example Python via reticulate): skip cleanly
   when missing.
 
@@ -146,7 +148,7 @@ Audience: R novices who copy code verbatim. The code must run as pasted.
 - The nightly Bioconductor build report is the source of truth; CI is an
   early warning.
 - Releases follow `dev/RELEASE.md`. Always: sync with Bioc devel, clean
-  `check-full` and `bioccheck`, tarball under 5 MB, NEWS complete,
+  `check-full` and `bioccheck`, tarball under 10 MB, NEWS complete,
   deprecations advanced, `/security-review` on the release diff.
 
 ## Scope and safety

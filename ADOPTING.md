@@ -31,10 +31,12 @@ as described under "What you need on your machine" in the README.
    time. That prompt is your hand-off checkpoint.
 
 3. **Provide the standard `make` targets.** The standards expect `test`,
-   `test-one`, `check`, `check-full`, `bioccheck`, `docs`, and `lint`.
-   Copy `templates/Makefile` if the package has no Makefile. If it has one,
-   add whichever targets are missing, keeping the same names. Recipe lines
-   must start with a tab.
+   `test-one`, `check`, `check-full`, `bioccheck`, `docs`, `lint`, and
+   `coverage`. Copy `templates/Makefile` if the package has no Makefile. If
+   it has one, add whichever targets are missing, keeping the same names,
+   and compare the existing ones against the template. Recipe lines must
+   start with a tab. Keep any extra targets the package already has, and
+   list them in AGENTS.md (step 4).
 
 4. **Add package notes.** Copy `templates/AGENTS.md` to the package root and
    fill it in, then copy `templates/CLAUDE.md` (a single line, `@AGENTS.md`)

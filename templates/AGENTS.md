@@ -17,6 +17,13 @@ code (e.g. Rcpp in src/, Stan models in inst/stan/).>
 <Slow test files to avoid during development, where fixtures live, and any
 optional dependencies that tests skip without.>
 
+## Extra make targets
+
+<Targets beyond the standard set, what each does, and whether agents may
+run it without asking (e.g. "`build`: builds the tarball in the repo root;
+ask first", "`clean`: deletes compiled objects; people only"). Write "None"
+if there are none.>
+
 ## Setup in a new worktree
 
 <Anything needed before tests run in a fresh checkout, e.g.

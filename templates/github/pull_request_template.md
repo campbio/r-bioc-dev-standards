@@ -7,7 +7,8 @@
 
 ## Checklist
 
-- [ ] Tests added or updated, and `make test` passes
+- [ ] Tests added or updated, `make test` passes, and `make coverage`
+      didn't drop
 - [ ] `make check-full` and `make bioccheck` pass with no new errors or warnings
 - [ ] NEWS.md updated for user-facing changes
 - [ ] Version bumped (z) if this will be pushed to Bioconductor

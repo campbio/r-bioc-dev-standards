@@ -234,9 +234,10 @@ All building, testing, and checking goes through the package's Makefile:
 |---|---|---|
 | `make test-one FILTER=<pattern>` | Runs matching test files | While developing |
 | `make test` | Runs the full test suite | Before hand-off |
+| `make coverage` | Prints test coverage, overall and per file | Before hand-off |
 | `make check` | Quick R CMD check | Any time |
-| `make check-full` | Full check: rebuilds vignettes, runs `\donttest` examples | Before a PR |
-| `make bioccheck` | Runs BiocCheck | Before a PR |
+| `make check-full` | Full check: rebuilds vignettes, runs `\donttest` examples, requires all Suggests | Before a PR |
+| `make bioccheck` | Runs BiocCheck and prints the tarball size | Before a PR |
 | `make docs` | Regenerates `man/*.Rd` and `NAMESPACE` from roxygen | After editing roxygen comments |
 | `make lint` | Runs lintr | Any time |
 
@@ -246,11 +247,22 @@ without asking every time. If a needed target doesn't exist, Claude asks
 rather than improvising, and it uses these targets even when a skill
 suggests raw `R CMD` commands.
 
+A package can add its own targets, such as `build` or `clean` for a package
+with compiled code. List them in the package's AGENTS.md, along with whether
+Claude may run each one without asking. Claude asks before running any
+extra target that isn't marked safe there, and anything that deletes files
+should stay a target for people only. Add safe extra targets to the
+allow-list in `.claude/settings.json` so Claude isn't prompted for them.
+
 The two check levels reflect a common practice of checking in two rounds.
 The quick check catches most problems fast. The full check also rebuilds
 vignettes and runs examples wrapped in `\donttest{}`, which nothing else
 exercises. `make check` and `make check-full` fail on any ERROR or WARNING.
 `make bioccheck` fails on BiocCheck ERRORs only, so read its WARNINGs too.
+The full check requires every package in Suggests to be installed, rather
+than quietly skipping the tests and examples that need a missing one.
+Bioconductor's builders install all Suggests, so this matches what they'll
+see.
 
 With the Bioconductor skills installed, **build-check-bioccheck** helps
 interpret check output, sorting real problems from environment issues and
@@ -350,7 +362,8 @@ R idioms.
 - The whole test suite must pass, not just tests near your change. Changes
   in one place often break code elsewhere.
 - Keep test data tiny so the suite stays fast, and don't let test coverage
-  go down.
+  go down. `make coverage` prints the overall and per-file percentages, so
+  compare its output before and after a change.
 - Tests that need optional software, such as Python packages used through
   reticulate, must skip cleanly when it isn't installed.
 
@@ -408,7 +421,8 @@ release also includes the following:
 
 - Syncing with Bioconductor's devel branch.
 - Clean `make check-full` and `make bioccheck` runs.
-- A source tarball under 5 MB.
+- A source tarball under 10 MB, with no single file over 5 MB. BiocCheck
+  enforces both, and `make bioccheck` prints the tarball's size.
 - A complete NEWS.md.
 - Advancing deprecations to the next stage.
 - A `/security-review` of the release changes.
