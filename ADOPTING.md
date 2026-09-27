@@ -24,7 +24,8 @@ as described under "What you need on your machine" in the README.
    template's entries into it: add the `SessionStart` and `PostToolUse`
    blocks inside the existing `"hooks"` object (replacing any older
    `lint-changed.sh` entry), and add the `allow` and `deny` rules to the
-   existing lists.
+   existing lists. The hook commands use paths relative to the package root
+   (`bash dev/hooks/...`), so start `claude` from the package root.
 
    The permissions let Claude run the standard `make` targets and read-only
    or local git commands without asking. They block pushes to Bioconductor,

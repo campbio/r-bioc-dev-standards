@@ -30,6 +30,9 @@ after Claude edits it and passes any lints back to Claude, so style problems
 are caught as the code is written rather than in CI. It only reports; it
 never rewrites the file.
 
+Both hooks are registered with paths relative to the package root
+(`bash dev/hooks/...`), so start `claude` from the package's top folder.
+
 Each package's own `AGENTS.md` adds what's specific to that package: its
 structure, slow tests, related packages, and any exceptions to these
 standards. When the two disagree, the package's "Overrides" section wins,

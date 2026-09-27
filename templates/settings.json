@@ -65,7 +65,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/dev/hooks/load-standards.sh\""
+            "command": "bash dev/hooks/load-standards.sh"
           }
         ]
       }
@@ -76,7 +76,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/dev/hooks/lint-changed.sh\""
+            "command": "bash dev/hooks/lint-changed.sh"
           }
         ]
       }
