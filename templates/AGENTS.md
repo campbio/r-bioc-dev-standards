@@ -1,7 +1,13 @@
 # <package>: notes for coding agents
 
 The shared development standards (r-bioc-dev-standards) load automatically
-at session start. This file adds only what is specific to this package.
+at session start in Claude Code. This file adds only what is specific to
+this package. Other agents (for example through GEMINI.md) don't get them
+automatically: read
+https://raw.githubusercontent.com/campbio/r-bioc-dev-standards/v1/standards.md
+(or the cached copy in `~/.cache/r-bioc-dev-standards/v1/`) before
+starting, and follow it; those agents also aren't bound by
+`.claude/settings.json`.
 
 ## About
 
