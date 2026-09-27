@@ -6,13 +6,22 @@
 # the include in the package's Makefile; extra targets go below it.
 #
 # Settings a package can change (set them above the include):
-#   FORCE_SUGGESTS  TRUE: check-full fails if any Suggests package is
-#                   missing, as on Bioconductor's builders. FALSE: skip
+#   FORCE_SUGGESTS  TRUE: check and check-full fail if any Suggests package
+#                   is missing, as on Bioconductor's builders. FALSE: skip
 #                   what needs a missing one.
 
 FORCE_SUGGESTS ?= TRUE
 
 .DEFAULT_GOAL := help
+
+# The package settings allow-list `make test-one` with any arguments, so
+# test-one must run on its own: `make test-one FILTER=x clean` would
+# otherwise run a people-only target without a prompt.
+ifneq ($(filter test-one,$(MAKECMDGOALS)),)
+  ifneq ($(words $(MAKECMDGOALS)),1)
+    $(error make test-one must be run on its own)
+  endif
+endif
 .PHONY: help docs test test-one check check-full bioccheck lint coverage \
   site-check standards-update
 
@@ -26,12 +35,17 @@ docs:  ## Regenerate man/*.Rd and NAMESPACE from roxygen comments
 test:  ## Run the full test suite
 	Rscript -e 'devtools::test(stop_on_failure = TRUE)'
 
+# FILTER reaches R through the environment, never pasted into the R code,
+# and may contain only letters, digits, '.', '_' and '-'.
 test-one:  ## Run matching test files: make test-one FILTER=<pattern>
-	@test -n "$(FILTER)" || { echo "Usage: make test-one FILTER=<pattern>"; exit 1; }
-	Rscript -e 'devtools::test(filter = "$(FILTER)", stop_on_failure = TRUE)'
+	@case "$$FILTER" in \
+	  "") echo "Usage: make test-one FILTER=<pattern>"; exit 1 ;; \
+	  *[!A-Za-z0-9._-]*) echo "FILTER may contain only letters, digits, '.', '_' and '-'."; exit 1 ;; \
+	esac
+	Rscript -e 'devtools::test(filter = Sys.getenv("FILTER"), stop_on_failure = TRUE)'
 
 check:  ## Quick R CMD check: skips vignettes and the PDF manual
-	Rscript -e 'rcmdcheck::rcmdcheck(args = c("--no-manual", "--ignore-vignettes"), build_args = "--no-build-vignettes", error_on = "warning", check_dir = tempdir())'
+	Rscript -e 'rcmdcheck::rcmdcheck(args = c("--no-manual", "--ignore-vignettes"), build_args = "--no-build-vignettes", env = c("_R_CHECK_FORCE_SUGGESTS_" = "$(FORCE_SUGGESTS)"), error_on = "warning", check_dir = tempdir())'
 
 check-full:  ## Full check: rebuilds vignettes, runs \donttest examples
 	Rscript -e 'devtools::check(document = FALSE, vignettes = TRUE, run_dont_test = TRUE, force_suggests = $(FORCE_SUGGESTS), error_on = "warning", check_dir = tempdir())'

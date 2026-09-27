@@ -154,8 +154,12 @@ Nothing leaves your machine yet.
 
 ### 4. Review
 
-Claude reviews its own work against the plan and fixes what it finds before
-showing it to you.
+Claude reviews its own work against the plan, then runs `/code-review` on
+the whole branch, and fixes what it finds before showing it to you. Where a
+finding doesn't apply, it says why. The two reviews catch different things:
+the first checks that the plan was carried out, and `/code-review` looks for
+bugs and risks in the diff itself, including in files the plan didn't
+mention.
 
 ### 5. Hand off to the developer
 
@@ -307,7 +311,17 @@ package's AGENTS.md, along with whether Claude may run each one without
 asking. Claude asks before running any extra target that isn't marked safe
 there, and anything that deletes files should stay a target for people
 only. Add safe extra targets to the allow-list in `.claude/settings.json` so
-Claude isn't prompted for them.
+Claude isn't prompted for them, and add people-only targets to its deny
+list (for example `Bash(make clean)`), so the rule is enforced rather than
+only written down.
+
+`make test-one` is allow-listed with any arguments, since the filter
+changes every time. Permission rules can't constrain arguments reliably, so
+the Makefile does it instead: `test-one` must run on its own, only `FILTER`
+may be set on the command line, `FILTER` may contain only letters, digits,
+`.`, `_` and `-`, and it reaches R through the environment rather than
+being pasted into R code. A deny rule, `Bash(make * -*)`, blocks make's own
+flags such as `-f`, which would read a different makefile.
 
 The two check levels reflect a common practice of checking in two rounds.
 The quick check catches most problems fast. The full check also rebuilds
@@ -520,9 +534,9 @@ release also includes the following:
 - **Secrets:** never commit tokens, passwords, or paths specific to your
   computer.
 - **Related packages:** when packages you maintain depend on each other or
-  share code, list them in each package's AGENTS.md. A change that could
-  affect a related package is then flagged in
-  the plan.
+  share code, list them in each package's AGENTS.md, on both sides and
+  describing the relationship the same way. A change that could affect a
+  related package is then flagged in the plan.
 - **Maintainer docs**, such as release checklists, roadmaps, ADRs, and plans,
   live in `dev/`, which is excluded from the package build.
 
