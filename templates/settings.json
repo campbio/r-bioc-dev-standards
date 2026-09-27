@@ -55,7 +55,9 @@
       "Edit(dev/hooks/**)",
       "Write(dev/hooks/**)",
       "Edit(.lintr)",
-      "Write(.lintr)"
+      "Write(.lintr)",
+      "Edit(~/.cache/r-bioc-dev-standards/**)",
+      "Write(~/.cache/r-bioc-dev-standards/**)"
     ]
   },
   "hooks": {

@@ -157,8 +157,9 @@ Audience: R novices who copy code verbatim. The code must run as pasted.
   need an approved ADR in `dev/adr/` (see its README); propose via an
   issue. If the package uses renv, update the lockfile when dependencies
   change.
-- Never edit `.claude/settings.json`, `Makefile`, `dev/hooks/`, `.lintr`, or
-  this file. Propose changes instead.
+- Never edit `.claude/settings.json`, `Makefile`, `dev/hooks/`, `.lintr`, the
+  downloaded copies in `~/.cache/r-bioc-dev-standards/`, or this file.
+  Propose changes instead.
 - Never delete files, run `git clean`, or force-push. Ask the developer.
 - No secrets, tokens, or absolute local paths in commits.
 - Flag any effect on related packages named in AGENTS.md.

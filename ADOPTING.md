@@ -13,11 +13,12 @@ as described under "What you need on your machine" in the README.
 ## Once per package
 
 1. **Add the hooks.** Copy `hooks/load-standards.sh` and
-   `hooks/lint-changed.sh` to `dev/hooks/` in the package. If you use a fork
-   of these standards, change the default URL near the top of
-   `load-standards.sh` to point at your fork. If the package already has a
-   `lint-changed.sh`, replace it: older versions printed lints to plain
-   output, which Claude Code never shows to Claude.
+   `hooks/lint-changed.sh` to `dev/hooks/` in the package. Both are small
+   and rarely change: the startup hook downloads the shared files, and
+   `lint-changed.sh` is a stub that runs the downloaded lint hook. If the
+   package already has a `lint-changed.sh`, replace it. If you use a fork
+   of these standards, set `R_BIOC_STANDARDS_BASE` in `load-standards.sh`
+   and the Makefile to your fork's raw-file URL.
 
 2. **Register the hook and permissions.** Copy `templates/settings.json` to
    `.claude/settings.json`. If the package already has one, merge the
@@ -36,14 +37,18 @@ as described under "What you need on your machine" in the README.
 
 3. **Provide the standard `make` targets and lint settings.** The standards
    expect `test`, `test-one`, `check`, `check-full`, `bioccheck`, `docs`,
-   `lint`, `coverage`, and `site-check`. Copy `templates/Makefile` if the
-   package has no Makefile. If it has one, add whichever targets are
-   missing, keeping the same names, and compare the existing ones against
-   the template. Recipe lines must start with a tab. Keep any extra targets
-   the package already has, and list them in AGENTS.md (step 4).
-   `site-check` also fails unless `_pkgdown.yml` sets `url:` and the site
-   URL appears in DESCRIPTION's `URL` field. A package with no pkgdown site
-   can leave the target out.
+   `lint`, `coverage`, and `site-check`. Their recipes live in
+   `shared/standards.mk` in this repo, so don't copy them into the package.
+   Copy `templates/Makefile`, which includes the shared file. If the package
+   already has a Makefile, start from the template and move over only the
+   package's extra targets, below the include; delete its own versions of
+   the standard targets. Where a standard target needs to behave
+   differently, use a setting above the include (see the comments in
+   `shared/standards.mk`), and ask for a new setting here if none fits.
+   Recipe lines must start with a tab. List the extra targets in AGENTS.md
+   (step 4). `site-check` fails unless `_pkgdown.yml` sets `url:` and the
+   site URL appears in DESCRIPTION's `URL` field. In a package with no
+   pkgdown site it doesn't apply; say so in AGENTS.md.
 
    Copy `templates/.lintr` to the package root, or keep the package's own.
    Either way, set `indentation_linter` to match the existing code, not the
@@ -96,8 +101,9 @@ as described under "What you need on your machine" in the README.
    a. Copy `templates/github/workflows/sync-stable.yaml` and
       `pr-base-devel.yaml` to `.github/workflows/`, and
       `templates/github/pull_request_template.md` to `.github/`. In
-      `sync-stable.yaml`, set `STABLE_BRANCH` to `main` or `master` to match
-      the repo. Merge these into `devel` by PR.
+      `sync-stable.yaml`, set `stable-branch` to `main` or `master` to match
+      the repo. Both workflows are short: they call the shared workflows in
+      this repo. Merge these into `devel` by PR.
 
    b. Make sure the current release branch is on GitHub. Fetch it from
       Bioconductor and push it to the shared GitHub repo, not a fork. Below,
@@ -140,6 +146,31 @@ as described under "What you need on your machine" in the README.
 
 ## Updating
 
-Changes to `standards.md` reach every package at its next session start;
-nothing in the package needs to change. Update a package's copies of the
-hooks in `dev/hooks/` only if the scripts themselves change here.
+When the maintainer moves the `v1` tag, changes to `standards.md`, the lint
+hook, the shared make targets, and the shared workflows reach every package
+at its next session start or workflow run. Nothing in the package needs to
+change.
+
+A package still needs its own edit when:
+
+- a new standard `make` target is added, since each package's
+  `.claude/settings.json` allow-list names the targets;
+- a package-specific file changes: `.claude/settings.json`, `AGENTS.md`,
+  `.lintr`, the PR template, `.Rbuildignore`, or `.gitignore`;
+- a breaking change is published as `v2` (the package moves when ready).
+
+## Migrating a package adopted before shared delivery
+
+Packages set up before the shared files moved into this repo have full
+copies that no longer update. Replace them once:
+
+1. Replace `dev/hooks/load-standards.sh` and `dev/hooks/lint-changed.sh`
+   with the current `hooks/` versions.
+2. Replace the Makefile with `templates/Makefile`, then add back only the
+   package's extra targets below the include, and any settings above it.
+3. Replace `.github/workflows/sync-stable.yaml` and `pr-base-devel.yaml`
+   with the templates, keeping the repo's `stable-branch` value.
+4. In `.claude/settings.json`, add the two
+   `~/.cache/r-bioc-dev-standards/**` deny rules from the template. The
+   hook commands don't change.
+5. Run `make help` and confirm it lists the standard targets.
