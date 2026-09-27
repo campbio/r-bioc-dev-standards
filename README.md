@@ -336,7 +336,10 @@ cover the allowed commands' dangerous arguments: extra flags after
 `git log` write a file. `git fetch` is allowed only in exact forms
 (`git fetch`, `git fetch --all`, `git fetch <remote>`), since a fetch
 refspec such as `+devel:main` overwrites a local branch; add a line for
-each remote the package uses, such as `Bash(git fetch campbio)`.
+each remote the package uses, such as `Bash(git fetch campbio)`. Leaving a
+command off the allow list only makes it prompt in manual mode; in auto
+mode the classifier may still approve it. So forced fetches are also
+denied outright: a `+` refspec, and fetch's `-f`/`--force` flags.
 
 **Checkpoints that hold in auto mode.** In auto mode a classifier approves
 commands instead of asking you, so leaving a command out of the allow list
