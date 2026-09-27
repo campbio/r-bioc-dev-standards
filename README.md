@@ -18,20 +18,39 @@ When you change a rule, update both files so they stay in sync.
 
 ## How the standards reach each package
 
-Each package that uses the standards contains a small startup hook,
-`dev/hooks/load-standards.sh`, registered in its `.claude/settings.json`.
-When a Claude Code session starts, resumes, is cleared, or is compacted,
-the hook downloads `standards.md` from this repo and adds it to Claude's
-context. If GitHub can't be reached, it uses the last downloaded copy and
-tells Claude that copy may be out of date.
+The shared files live only in this repo. Packages keep small, stable
+pieces that fetch or call them, so a fix made here reaches every package
+without editing each one. There are three ways a file gets to a package:
+
+- **Downloaded at session start.** Each package has a startup hook,
+  `dev/hooks/load-standards.sh`, registered in its `.claude/settings.json`.
+  When a Claude Code session starts, resumes, is cleared, or is compacted,
+  the hook downloads `standards.md`, the lint hook, and the shared make
+  targets (`shared/standards.mk`) into `~/.cache/r-bioc-dev-standards/`,
+  then adds `standards.md` to Claude's context. If GitHub can't be
+  reached, it uses the last downloaded copies and tells Claude they may be
+  out of date.
+- **Called by GitHub.** The workflows that keep the stable branch current
+  and check PR base branches live in this repo's `.github/workflows/`.
+  Each package has short workflows that call them.
+- **Copied once, then edited per package.** Files that differ between
+  packages (`.claude/settings.json`, `AGENTS.md`, `.lintr`, the PR
+  template) start from `templates/` and belong to the package afterwards.
 
 A second hook, `dev/hooks/lint-changed.sh`, runs lintr on each R file right
 after Claude edits it and passes any lints back to Claude, so style problems
 are caught as the code is written rather than in CI. It only reports; it
-never rewrites the file.
+never rewrites the file. The package's copy is a short stub that runs the
+downloaded version.
 
 Both hooks are registered with paths relative to the package root
 (`bash dev/hooks/...`), so start `claude` from the package's top folder.
+
+**Versions.** Packages use the `v1` tag of this repo, not `main`. Changes
+merged to `main` reach packages only when the maintainer moves `v1`, which
+gives a chance to test a change first (see "Changing these standards").
+Because packages download and run scripts and make recipes from this repo,
+`main` is protected and changes arrive by pull request.
 
 Each package's own `AGENTS.md` adds what's specific to that package: its
 structure, slow tests, related packages, and any exceptions to these
@@ -52,15 +71,18 @@ your fork, and adapt the rules to your project.
 | `standards.md` | The condensed standards loaded into each session |
 | `README.md` | The full explanation of each rule (this file) |
 | `ADOPTING.md` | Steps to set up a package |
-| `hooks/load-standards.sh` | The startup hook, copied into each package's `dev/hooks/` |
-| `hooks/lint-changed.sh` | The after-edit lint hook, copied into each package's `dev/hooks/` |
+| `hooks/load-standards.sh` | The startup hook, copied once into each package's `dev/hooks/` |
+| `hooks/lint-changed.sh` | Stub for the after-edit lint hook, copied once into each package's `dev/hooks/` |
+| `shared/lint-changed.sh` | The lint hook itself, downloaded at session start |
+| `shared/standards.mk` | The standard `make` targets, downloaded and included by each package's Makefile |
+| `.github/workflows/sync-stable.yaml` | Shared workflow: keeps `main`/`master` matching the current release, and tags releases |
+| `.github/workflows/pr-base-devel.yaml` | Shared workflow: fails PRs aimed at the stable branch |
 | `templates/settings.json` | Hook registration and permissions for `.claude/settings.json` |
-| `templates/Makefile` | The standard `make` targets |
+| `templates/Makefile` | A package Makefile: settings, the shared targets, and extra targets |
 | `templates/.lintr` | lintr settings: 80 columns, indentation set per package (4 spaces by default) |
 | `templates/dev/adr/` | Decision record (ADR) template and index |
 | `templates/AGENTS.md`, `templates/CLAUDE.md` | Starting points for package-specific notes |
-| `templates/github/workflows/sync-stable.yaml` | Keeps `main`/`master` matching the current release, and tags releases |
-| `templates/github/workflows/pr-base-devel.yaml` | Fails PRs aimed at the stable branch |
+| `templates/github/workflows/*.yaml` | Short workflows that call the two shared workflows |
 | `templates/github/pull_request_template.md` | PR template: base-branch reminder, checklist, ADR link, scientific-correctness and generated-content sections |
 
 ## What you need on your machine
@@ -267,6 +289,14 @@ and Claude Code's permission settings can allow exactly these commands
 without asking every time. If a needed target doesn't exist, Claude asks
 rather than improvising, and it uses these targets even when a skill
 suggests raw `R CMD` commands.
+
+The recipes for these targets live in `shared/standards.mk` in this repo.
+Each package's Makefile includes a cached copy, downloading it the first
+time `make` runs, and the startup hook refreshes it at every session;
+`make standards-update` refreshes it by hand. A package changes a shared
+target through settings set above the include, such as
+`FORCE_SUGGESTS = FALSE` for a package whose Suggests can't all be
+installed, rather than by copying the recipe.
 
 A package can add its own targets, such as `build` or `clean` for a package
 with compiled code, or `app` to launch a Shiny app. List them in the
@@ -479,8 +509,9 @@ release also includes the following:
   template and a README explaining when one is needed. If the package uses
   renv, update its lockfile when dependencies change.
 - **Guardrails:** Claude doesn't edit its own guardrails: the Claude
-  settings, the Makefile, the hooks, `.lintr`, or these standards. It proposes
-  changes instead, so rules can't be loosened by the agent they constrain.
+  settings, the Makefile, the hooks, `.lintr`, the downloaded copies in
+  `~/.cache/r-bioc-dev-standards/`, or these standards. It proposes changes
+  instead, so rules can't be loosened by the agent they constrain.
 - **Destructive commands:** Claude never deletes files, runs `git clean`, or
   force-pushes. Anything destructive is done by a person.
 - **Secrets:** never commit tokens, passwords, or paths specific to your
@@ -494,13 +525,25 @@ release also includes the following:
 
 ## Changing these standards
 
-1. Open a PR in this repo that changes both `standards.md` and this README.
-2. To try the change before merging, start a session in any package that
-   uses the standards, pointed at your branch:
-   `R_BIOC_STANDARDS_URL=https://raw.githubusercontent.com/<owner>/r-bioc-dev-standards/<branch>/standards.md claude`
-3. After merging, every package picks up the change at its next session
-   start. GitHub's file cache can delay this by a few minutes.
-4. Bump the version in `standards.md`'s title for meaningful changes.
+1. Open a PR in this repo. A rule change updates both `standards.md` and
+   this README.
+2. Try the change before merging by starting a session in any package that
+   uses the standards, pointed at your branch. The hooks and `make` both
+   read the same setting:
+   `R_BIOC_STANDARDS_REF=<branch> claude`
+3. Merge the PR. Nothing reaches packages yet.
+4. Publish it by moving the `v1` tag to the merge commit:
+   `git tag -f v1 <commit>` then `git push -f origin refs/tags/v1`.
+   Every package picks up the change at its next session start. GitHub's
+   file cache can delay this by a few minutes.
+5. A change that would break existing packages, such as renaming a make
+   target they rely on or requiring a new input to a shared workflow, goes
+   out as `v2` instead. Each package then moves to `v2` when it's ready.
+6. Bump the version in `standards.md`'s title for meaningful changes.
+
+A fork of this repo sets `R_BIOC_STANDARDS_BASE` (in the package Makefile
+and the hook, or in the environment) to its own raw-file URL, and points
+the package workflows' `uses:` lines at the fork.
 
 Keep `standards.md` short. Explanations belong here, and rules for a single
 package belong in that package's `AGENTS.md`.
