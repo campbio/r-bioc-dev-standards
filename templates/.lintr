@@ -1,5 +1,7 @@
 linters: linters_with_defaults(
     line_length_linter = line_length_linter(80),
+    # Match the package's existing code: 4 spaces is Bioconductor's
+    # recommendation, but use indent = 2L if the package is written with 2.
     indentation_linter = indentation_linter(indent = 4L),
     object_name_linter = object_name_linter(
       styles = c("camelCase", "snake_case", "symbols")

@@ -53,7 +53,7 @@ your fork, and adapt the rules to your project.
 | `hooks/lint-changed.sh` | The after-edit lint hook, copied into each package's `dev/hooks/` |
 | `templates/settings.json` | Hook registration and permissions for `.claude/settings.json` |
 | `templates/Makefile` | The standard `make` targets |
-| `templates/.lintr` | lintr settings matching BiocCheck (80 columns, 4-space indent) |
+| `templates/.lintr` | lintr settings: 80 columns, indentation set per package (4 spaces by default) |
 | `templates/dev/adr/` | Decision record (ADR) template and index |
 | `templates/AGENTS.md`, `templates/CLAUDE.md` | Starting points for package-specific notes |
 | `templates/github/workflows/sync-stable.yaml` | Keeps `main`/`master` matching the current release, and tags releases |
@@ -345,17 +345,26 @@ R idioms.
   than inventing new containers, so the package works with the rest of
   Bioconductor.
 - **Style:** follow BiocCheck and each repo's lintr settings: lines of at
-  most 80 characters, 4-space indentation, `vapply` over `sapply`,
+  most 80 characters, indentation as the package's `.lintr` sets,
+  `vapply` over `sapply`,
   `seq_len()` over `1:n`, and `message()` or `warning()` rather than
   `print()` or `cat()`. Run styler on new files only. Restyling existing
   code in a functional change buries the real change in the diff, so lint
   cleanup gets its own PR.
-- **lintr settings:** lintr expects 2-space indentation by default, which
-  contradicts BiocCheck, so each package needs a `.lintr` file.
-  `templates/.lintr` sets 80 columns and 4-space indentation, accepts
-  camelCase or snake_case names, and turns off a few linters that are noisy
-  in Bioconductor code. A package that uses only one naming style can
-  narrow `object_name_linter` to it.
+- **lintr settings:** each package has a `.lintr` file, which `make lint`
+  and the after-edit lint hook both read. `templates/.lintr` sets 80
+  columns, accepts camelCase or snake_case names, and turns off a few
+  linters that are noisy in Bioconductor code. A package that uses only one
+  naming style can narrow `object_name_linter` to it.
+- **Indentation:** Bioconductor recommends 4 spaces, and BiocCheck raises a
+  NOTE (not an error) for other indentation. Many existing packages use 2,
+  so the indentation setting in `.lintr` matches the package's existing
+  code: the template's 4 spaces for new packages, `indent = 2L` for a
+  package written with 2. A lintr setting that fights the existing code
+  makes every edit report hundreds of lints and pushes new code out of step
+  with the lines around it. Converting a package from 2 to 4 spaces is the
+  maintainer's call, done in its own PR, and in a 2-space package the
+  BiocCheck indentation NOTE is expected.
 
 ## Documentation and data
 

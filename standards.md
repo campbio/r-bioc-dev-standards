@@ -90,9 +90,9 @@ Audience: R novices who copy code verbatim. The code must run as pasted.
 - `TRUE`/`FALSE`, never `T`/`F`. Test flags with `isTRUE()`.
 - Use accessors, never `@`, outside class definitions. Reuse Bioconductor
   classes (SingleCellExperiment, SummarizedExperiment).
-- BiocCheck and lintr: at most 80 columns, 4-space indent, `vapply` over
-  `sapply`, `seq_len`/`seq_along` over `1:n`, `message()`/`warning()` rather
-  than `print()`/`cat()`.
+- BiocCheck and lintr: at most 80 columns, indent as the package's
+  `.lintr` sets, `vapply` over `sapply`, `seq_len`/`seq_along` over `1:n`,
+  `message()`/`warning()` rather than `print()`/`cat()`.
 - styler on new files only. Never restyle existing code in a functional
   change; lint backlog gets its own PR.
 

@@ -44,10 +44,13 @@ as described under "What you need on your machine" in the README.
    URL appears in DESCRIPTION's `URL` field. A package with no pkgdown site
    can leave the target out.
 
-   Copy `templates/.lintr` to the package root. If the package already has
-   a `.lintr`, make sure it sets `indentation_linter(indent = 4L)`, since
-   lintr's default of 2 spaces contradicts BiocCheck. Narrow
-   `object_name_linter` to the package's naming style if it uses only one.
+   Copy `templates/.lintr` to the package root, or keep the package's own.
+   Either way, set `indentation_linter` to match the existing code, not the
+   other way round. The template uses 4 spaces, Bioconductor's
+   recommendation, but many packages use 2. If `make lint` reports hundreds
+   of indentation lints, set `indent = 2L`; converting the code is a
+   separate decision and its own PR. Narrow `object_name_linter` to the
+   package's naming style if it uses only one.
 
 4. **Add package notes.** Copy `templates/AGENTS.md` to the package root and
    fill it in, then copy `templates/CLAUDE.md` (a single line, `@AGENTS.md`)
