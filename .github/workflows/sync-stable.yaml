@@ -93,13 +93,24 @@ jobs:
             echo "Release $tag already exists."
             exit 0
           fi
-          # Release notes: the top NEWS.md section, up to the next heading
-          # of the same or higher level (subsections are kept).
-          if git cat-file -e "$rel_sha:NEWS.md" 2> /dev/null; then
-            git show "$rel_sha:NEWS.md" | awk '
-              /^#/ { match($0, /^#+/)
-                     if (!lvl) lvl = RLENGTH; else if (RLENGTH <= lvl) exit }
-              lvl' > notes.md
+          # Release notes: the NEWS.md section whose heading names this
+          # version, up to the next heading of the same or higher level
+          # (subsections are kept). The release branch's NEWS.md is checked
+          # first, then devel's, since a release branch cut before NEWS was
+          # updated may lack the section.
+          news_section() {
+            git show "$1:NEWS.md" 2> /dev/null | awk -v v="$version" '
+              BEGIN { gsub(/[.]/, "[.]", v); pat = "(^|[^0-9.])" v "([^0-9]|$)" }
+              /^#/ {
+                match($0, /^#+/)
+                if (lvl) { if (RLENGTH <= lvl) exit }
+                else if ($0 ~ pat) lvl = RLENGTH
+              }
+              lvl'
+          }
+          news_section "$rel_sha" > notes.md
+          if [ ! -s notes.md ]; then
+            news_section origin/devel > notes.md
           fi
           if [ ! -s notes.md ]; then
             echo "Bioconductor release version $version." > notes.md

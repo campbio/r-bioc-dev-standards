@@ -245,8 +245,11 @@ at it, with instructions to switch the base to `devel`.
 **Tags and GitHub Releases.** Bioconductor doesn't use git tags; it goes by
 the version in DESCRIPTION. On GitHub, the same Action tags each version
 that appears on the current release branch, e.g. `v1.22.0` at release and
-`v1.22.1` after a release fix, and publishes a GitHub Release using the top
-section of NEWS.md. Devel versions aren't tagged: every change bumps the
+`v1.22.1` after a release fix, and publishes a GitHub Release whose notes
+are the NEWS.md section for that version. It looks in the release branch's
+NEWS.md first and then in `devel`'s, because a release branch cut before
+NEWS was updated can lack the section; if neither has one, the notes just
+name the version. Devel versions aren't tagged: every change bumps the
 version, and those versions never reach users. Connecting the repo to
 Zenodo gives each GitHub Release a citable DOI.
 
