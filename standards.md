@@ -54,7 +54,8 @@ Plans and designs go in `dev/plans/`, never `docs/`.
 
 ## Commands
 - Use only Makefile targets: `test`, `test-one FILTER=<pattern>`, `check`,
-  `check-full`, `bioccheck`, `docs`, `lint`, `coverage`, `site-check`.
+  `check-full`, `bioccheck`, `docs`, `lint`, `coverage`, `site-check`,
+  `article FILTER=<name>`.
 - Extra targets are allowed only if AGENTS.md lists them. Ask before
   running any extra target that AGENTS.md doesn't mark as safe.
 - `make test-one FILTER=<pattern>` only: no other targets, variables, or
@@ -111,8 +112,8 @@ Audience: R novices who copy code verbatim. The code must run as pasted.
 - NEWS.md: an entry for every user-facing change, under the upcoming
   version, in the file's existing format.
 - pkgdown: add new exports to `_pkgdown.yml`, then run `make site-check`.
-  Preview single pages only; never `build_site()` or deploy. Knit edited
-  articles locally.
+  Preview single pages only; never `build_site()` or deploy. Render each
+  edited vignette or article with `make article FILTER=<name>`.
 
 ## Testing
 - Bug fixes start with a failing regression test.

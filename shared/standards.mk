@@ -23,7 +23,7 @@ ifneq ($(filter test-one,$(MAKECMDGOALS)),)
   endif
 endif
 .PHONY: help docs test test-one check check-full bioccheck lint coverage \
-  site-check standards-update
+  site-check article standards-update
 
 help:  ## List targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | \
@@ -65,6 +65,18 @@ coverage:  ## Print test coverage, overall and per file
 
 site-check:  ## Check the pkgdown reference index lists every export (no site build)
 	Rscript -e 'pkgdown::check_pkgdown()'
+
+# Renders one vignette or pkgdown article into a temporary folder, so the
+# committed docs/ (if any) is never touched. FILTER is the file name without
+# .Rmd; articles in vignettes/articles/ are found automatically.
+article:  ## Render one article to a temp folder: make article FILTER=<name>
+	@case "$$FILTER" in \
+	  "") echo "Usage: make article FILTER=<name>"; exit 1 ;; \
+	  *[!A-Za-z0-9._-]*) echo "FILTER may contain only letters, digits, '.', '_' and '-'."; exit 1 ;; \
+	esac
+	@out="$$(mktemp -d)"; \
+	  OUT="$$out" Rscript -e 'n <- Sys.getenv("FILTER"); if (file.exists(file.path("vignettes", "articles", paste0(n, ".Rmd")))) n <- file.path("articles", n); pkg <- pkgdown::as_pkgdown(".", override = list(destination = Sys.getenv("OUT"))); pkgdown::build_article(n, pkg = pkg, lazy = FALSE, new_process = FALSE)' && \
+	  echo "Rendered into $$out"
 
 standards-update:  ## Re-download this file of shared targets
 	curl -fsSL --max-time 30 "$(R_BIOC_STANDARDS_BASE)/shared/standards.mk" -o "$(STANDARDS_MK).tmp"

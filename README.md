@@ -290,6 +290,7 @@ All building, testing, and checking goes through the package's Makefile:
 | `make docs` | Regenerates `man/*.Rd` and `NAMESPACE` from roxygen | After editing roxygen comments |
 | `make lint` | Runs lintr | Any time |
 | `make site-check` | Checks the pkgdown reference index lists every export, without building the site | After adding an export |
+| `make article FILTER=<name>` | Renders one vignette or pkgdown article into a temporary folder, leaving `docs/` alone | After editing an article |
 
 Using the same commands everywhere means everyone runs checks the same way,
 and Claude Code's permission settings can allow exactly these commands
@@ -465,7 +466,9 @@ R idioms.
 - **pkgdown:** new exports go in the `_pkgdown.yml` reference index; check
   with `make site-check`. Preview single pages locally, and leave full site
   builds and deployment to CI.
-  Knit edited articles locally, since R CMD check doesn't run them.
+  Render edited articles with `make article FILTER=<name>`, since R CMD
+  check doesn't run them. It renders into a temporary folder, so a
+  committed `docs/` isn't changed.
 
 ## Testing
 
