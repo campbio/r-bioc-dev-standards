@@ -9,8 +9,13 @@ at session start. This file adds only what is specific to this package.
 
 ## Layout
 
-<Where the main code lives, key classes and entry points, and any compiled
-code (e.g. Rcpp in src/, Stan models in inst/stan/).>
+<Where the main code lives, entry points, and any compiled code (e.g. Rcpp
+in src/, Stan models in inst/stan/).>
+
+## Object model
+
+<The main classes (S4 or otherwise), their slots, and the accessors to use
+instead of `@`. Write "None" if the package has no classes of its own.>
 
 ## Tests
 
@@ -21,8 +26,9 @@ optional dependencies that tests skip without.>
 
 <Targets beyond the standard set, what each does, and whether agents may
 run it without asking (e.g. "`build`: builds the tarball in the repo root;
-ask first", "`clean`: deletes compiled objects; people only"). Write "None"
-if there are none.>
+ask first", "`clean`: deletes compiled objects; people only"). Safe targets
+go in the settings allow-list and people-only ones in its deny list. Write
+"None" if there are none.>
 
 ## Setup in a new worktree
 
@@ -32,7 +38,8 @@ if there are none.>
 ## Related packages
 
 <Packages that depend on this one or share code with it, and what to check
-there when this package changes. Write "None" if there are none.>
+there when this package changes. Each related package lists this one too,
+describing the relationship the same way. Write "None" if there are none.>
 
 ## Overrides
 

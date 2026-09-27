@@ -22,7 +22,8 @@ On conflict, follow the higher level and say so.
    `feature/<topic>`. Never work on `devel` or `RELEASE_*`. Small plan:
    executing-plans. Multi-task plan: subagent-driven-development. Use TDD
    with testthat. Make small local commits whose messages say what and why.
-4. REVIEW: requesting-code-review against the plan. Fix findings.
+4. REVIEW: requesting-code-review against the plan, then `/code-review` on
+   the branch. Fix findings, or say why one doesn't apply.
 5. HAND OFF: stop before anything leaves the machine. Give a summary, list
    anything unverified, say whether results, numbers, or plots change, and
    show `git log devel..HEAD` and `git diff devel...HEAD`. No push, PR, or
@@ -56,6 +57,8 @@ Plans and designs go in `dev/plans/`, never `docs/`.
   `check-full`, `bioccheck`, `docs`, `lint`, `coverage`, `site-check`.
 - Extra targets are allowed only if AGENTS.md lists them. Ask before
   running any extra target that AGENTS.md doesn't mark as safe.
+- `make test-one FILTER=<pattern>` only: no other targets, variables, or
+  flags on that command line.
 - While developing: `test-one`. Before hand-off: `test` and `coverage`.
   Before a PR: `check-full` and `bioccheck`.
 - If a target is missing, ask. Never substitute raw `R CMD` or `Rscript`,
