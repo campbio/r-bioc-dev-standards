@@ -317,11 +317,23 @@ only written down.
 
 `make test-one` is allow-listed with any arguments, since the filter
 changes every time. Permission rules can't constrain arguments reliably, so
-the Makefile does it instead: `test-one` must run on its own, only `FILTER`
-may be set on the command line, `FILTER` may contain only letters, digits,
-`.`, `_` and `-`, and it reaches R through the environment rather than
-being pasted into R code. A deny rule, `Bash(make * -*)`, blocks make's own
-flags such as `-f`, which would read a different makefile.
+the package's Makefile checks them itself, before anything else runs:
+`FILTER` may contain only letters, digits, `.`, `_` and `-` (checked before
+make expands it), no other variable may be set on the command line, and
+`test-one` must be the only target. The shared recipe also passes `FILTER`
+to R through the environment rather than pasting it into R code. A deny
+rule, `Bash(make * -*)`, blocks make's own flags such as `-f`, which would
+read a different makefile.
+
+The same reasoning applies to git. Rather than allowing `git branch` or
+`git switch` with any arguments and then denying dangerous flags, which git
+lets you bundle (`-qD`) or abbreviate (`--dele`), the allow list names only
+safe forms: listing branches, creating one with `git switch -c` or
+`git checkout -b`, fetching, adding, and committing. Anything else, such as
+switching to an existing branch or deleting one, asks first. A few deny
+rules cover the allowed commands' dangerous arguments: extra flags after
+`switch -c` or `checkout -b`, fetch refspecs that write a local branch, and
+`--output`, which makes `git diff` or `git log` write a file.
 
 The two check levels reflect a common practice of checking in two rounds.
 The quick check catches most problems fast. The full check also rebuilds
