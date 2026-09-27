@@ -163,7 +163,8 @@ Audience: R novices who copy code verbatim. The code must run as pasted.
 - Never edit `.claude/settings.json`, `Makefile`, `dev/hooks/`, `.lintr`, the
   downloaded copies in `~/.cache/r-bioc-dev-standards/`, or this file.
   Propose changes instead.
-- Never delete files, run `git clean`, or force-push. Ask the developer.
+- Never delete files or branches, run `git clean`, or force-push. Ask the
+  developer.
 - No secrets, tokens, or absolute local paths in commits.
 - Flag any effect on related packages named in AGENTS.md.
 - Maintainer docs live in `dev/`.

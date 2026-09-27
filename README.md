@@ -329,11 +329,25 @@ The same reasoning applies to git. Rather than allowing `git branch` or
 `git switch` with any arguments and then denying dangerous flags, which git
 lets you bundle (`-qD`) or abbreviate (`--dele`), the allow list names only
 safe forms: listing branches, creating one with `git switch -c` or
-`git checkout -b`, fetching, adding, and committing. Anything else, such as
-switching to an existing branch or deleting one, asks first. A few deny
-rules cover the allowed commands' dangerous arguments: extra flags after
-`switch -c` or `checkout -b`, fetch refspecs that write a local branch, and
-`--output`, which makes `git diff` or `git log` write a file.
+`git checkout -b`, fetching named remotes, adding, and committing. Anything
+else, such as switching to an existing branch, asks first. A few deny rules
+cover the allowed commands' dangerous arguments: extra flags after
+`switch -c` or `checkout -b`, and `--output`, which makes `git diff` or
+`git log` write a file. `git fetch` is allowed only in exact forms
+(`git fetch`, `git fetch --all`, `git fetch <remote>`), since a fetch
+refspec such as `+devel:main` overwrites a local branch; add a line for
+each remote the package uses, such as `Bash(git fetch campbio)`.
+
+**Checkpoints that hold in auto mode.** In auto mode a classifier approves
+commands instead of asking you, so leaving a command out of the allow list
+isn't enough to guarantee a prompt. Ask rules always prompt, even in auto
+mode, so the template lists `git push`, `gh pr create`, and deleting a
+branch as ask rules. That keeps the hand-off checkpoint: nothing leaves your
+machine, and no branch disappears, without your approval. If your own
+`~/.claude/settings.json` allows `git push`, change it to an ask rule too.
+Note that a rule ending in `:*` is read as a plain prefix, so a `*` earlier
+in such a rule is taken literally; write wildcard rules with a trailing `*`
+instead.
 
 The two check levels reflect a common practice of checking in two rounds.
 The quick check catches most problems fast. The full check also rebuilds
@@ -541,8 +555,8 @@ release also includes the following:
   settings, the Makefile, the hooks, `.lintr`, the downloaded copies in
   `~/.cache/r-bioc-dev-standards/`, or these standards. It proposes changes
   instead, so rules can't be loosened by the agent they constrain.
-- **Destructive commands:** Claude never deletes files, runs `git clean`, or
-  force-pushes. Anything destructive is done by a person.
+- **Destructive commands:** Claude never deletes files or branches, runs
+  `git clean`, or force-pushes. Anything destructive is done by a person.
 - **Secrets:** never commit tokens, passwords, or paths specific to your
   computer.
 - **Related packages:** when packages you maintain depend on each other or

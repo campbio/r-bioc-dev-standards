@@ -32,9 +32,11 @@ as described under "What you need on your machine" in the README.
    list of safe git commands without asking; any other git command asks
    first. They block pushes to Bioconductor, force-pushes, recursive
    deletes, and edits to generated files and to the guardrails themselves.
-   `git push` and `gh pr create` are deliberately left out of the allow
-   list, so Claude must ask you each time. That prompt is your hand-off
-   checkpoint.
+   `git push`, `gh pr create`, and branch deletion are ask rules, so Claude
+   must ask you each time, even in auto mode. That prompt is your hand-off
+   checkpoint. Add a `Bash(git fetch <remote>)` allow rule for each remote
+   the package uses (for example the org-named shared remote); the
+   template covers `origin`, `upstream`, and `bioc`.
 
 3. **Provide the standard `make` targets and lint settings.** The standards
    expect `test`, `test-one`, `check`, `check-full`, `bioccheck`, `docs`,
