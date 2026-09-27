@@ -12,15 +12,18 @@ as described under "What you need on your machine" in the README.
 
 ## Once per package
 
-1. **Add the loader.** Copy `hooks/load-standards.sh` to
-   `dev/hooks/load-standards.sh` in the package. If you use a fork of these
-   standards, change the default URL near the top of the script to point at
-   your fork.
+1. **Add the hooks.** Copy `hooks/load-standards.sh` and
+   `hooks/lint-changed.sh` to `dev/hooks/` in the package. If you use a fork
+   of these standards, change the default URL near the top of
+   `load-standards.sh` to point at your fork. If the package already has a
+   `lint-changed.sh`, replace it: older versions printed lints to plain
+   output, which Claude Code never shows to Claude.
 
 2. **Register the hook and permissions.** Copy `templates/settings.json` to
    `.claude/settings.json`. If the package already has one, merge the
-   template's entries into it: add the `SessionStart` block inside the
-   existing `"hooks"` object, and add the `allow` and `deny` rules to the
+   template's entries into it: add the `SessionStart` and `PostToolUse`
+   blocks inside the existing `"hooks"` object (replacing any older
+   `lint-changed.sh` entry), and add the `allow` and `deny` rules to the
    existing lists.
 
    The permissions let Claude run the standard `make` targets and read-only
@@ -30,19 +33,30 @@ as described under "What you need on your machine" in the README.
    deliberately left out of the allow list, so Claude must ask you each
    time. That prompt is your hand-off checkpoint.
 
-3. **Provide the standard `make` targets.** The standards expect `test`,
-   `test-one`, `check`, `check-full`, `bioccheck`, `docs`, `lint`, and
-   `coverage`. Copy `templates/Makefile` if the package has no Makefile. If
-   it has one, add whichever targets are missing, keeping the same names,
-   and compare the existing ones against the template. Recipe lines must
-   start with a tab. Keep any extra targets the package already has, and
-   list them in AGENTS.md (step 4).
+3. **Provide the standard `make` targets and lint settings.** The standards
+   expect `test`, `test-one`, `check`, `check-full`, `bioccheck`, `docs`,
+   `lint`, `coverage`, and `site-check`. Copy `templates/Makefile` if the
+   package has no Makefile. If it has one, add whichever targets are
+   missing, keeping the same names, and compare the existing ones against
+   the template. Recipe lines must start with a tab. Keep any extra targets
+   the package already has, and list them in AGENTS.md (step 4).
+   `site-check` also fails unless `_pkgdown.yml` sets `url:` and the site
+   URL appears in DESCRIPTION's `URL` field. A package with no pkgdown site
+   can leave the target out.
+
+   Copy `templates/.lintr` to the package root. If the package already has
+   a `.lintr`, make sure it sets `indentation_linter(indent = 4L)`, since
+   lintr's default of 2 spaces contradicts BiocCheck. Narrow
+   `object_name_linter` to the package's naming style if it uses only one.
 
 4. **Add package notes.** Copy `templates/AGENTS.md` to the package root and
    fill it in, then copy `templates/CLAUDE.md` (a single line, `@AGENTS.md`)
    next to it so Claude Code loads the notes. If the package already has an
    AGENTS.md that repeats general rules now covered by the standards, remove
    those parts and keep only what's specific to the package.
+
+   If the package has no `dev/adr/`, copy `templates/dev/adr/` there. It
+   holds the ADR template and a README explaining when one is needed.
 
 5. **Keep the new files out of the package build.** Add these lines to
    `.Rbuildignore`, skipping any that are already there:
@@ -54,6 +68,7 @@ as described under "What you need on your machine" in the README.
    ^AGENTS\.md$
    ^CLAUDE\.md$
    ^Makefile$
+   ^\.lintr$
    ```
 
    Add these to `.gitignore`:
@@ -122,5 +137,5 @@ as described under "What you need on your machine" in the README.
 ## Updating
 
 Changes to `standards.md` reach every package at its next session start;
-nothing in the package needs to change. Update a package's copy of
-`load-standards.sh` only if the script itself changes here.
+nothing in the package needs to change. Update a package's copies of the
+hooks in `dev/hooks/` only if the scripts themselves change here.

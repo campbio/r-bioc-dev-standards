@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
       "Bash(make test)",
@@ -9,6 +10,7 @@
       "Bash(make docs)",
       "Bash(make lint)",
       "Bash(make coverage)",
+      "Bash(make site-check)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
@@ -51,7 +53,9 @@
       "Edit(Makefile)",
       "Write(Makefile)",
       "Edit(dev/hooks/**)",
-      "Write(dev/hooks/**)"
+      "Write(dev/hooks/**)",
+      "Edit(.lintr)",
+      "Write(.lintr)"
     ]
   },
   "hooks": {
@@ -62,6 +66,17 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/dev/hooks/load-standards.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/dev/hooks/lint-changed.sh\""
           }
         ]
       }

@@ -24,15 +24,15 @@ On conflict, follow the higher level and say so.
    with testthat. Make small local commits whose messages say what and why.
 4. REVIEW: requesting-code-review against the plan. Fix findings.
 5. HAND OFF: stop before anything leaves the machine. Give a summary, list
-   anything unverified, and show `git log devel..HEAD` and
-   `git diff devel...HEAD`. No push, PR, or merge until the developer
-   approves.
+   anything unverified, say whether results, numbers, or plots change, and
+   show `git log devel..HEAD` and `git diff devel...HEAD`. No push, PR, or
+   merge until the developer approves.
 6. AFTER APPROVAL: push the branch and open a PR with base `devel` (not the
-   default branch).
-   The PR description covers what changed, why, how it was tested, and the
-   linked issue. Put follow-up fixes on the same branch; never open a second
-   PR. Merge only after CI is green and a person approves on GitHub. No
-   local merges. No history rewrites after a push.
+   default branch). Fill in the PR template, but never its "Scientific
+   correctness" section; a person verifies that. Put follow-up fixes on the
+   same branch; never open a second PR. Merge only after CI is green and a
+   person approves on GitHub. No local merges. No history rewrites after a
+   push.
 
 Plans and designs go in `dev/plans/`, never `docs/`.
 
@@ -53,7 +53,7 @@ Plans and designs go in `dev/plans/`, never `docs/`.
 
 ## Commands
 - Use only Makefile targets: `test`, `test-one FILTER=<pattern>`, `check`,
-  `check-full`, `bioccheck`, `docs`, `lint`, `coverage`.
+  `check-full`, `bioccheck`, `docs`, `lint`, `coverage`, `site-check`.
 - Extra targets are allowed only if AGENTS.md lists them. Ask before
   running any extra target that AGENTS.md doesn't mark as safe.
 - While developing: `test-one`. Before hand-off: `test` and `coverage`.
@@ -107,9 +107,9 @@ Audience: R novices who copy code verbatim. The code must run as pasted.
   `R/data.R` docs with `@format` (and `@source` if external).
 - NEWS.md: an entry for every user-facing change, under the upcoming
   version, in the file's existing format.
-- pkgdown: add new exports to `_pkgdown.yml`, then run
-  `pkgdown::check_pkgdown()`. Preview single pages only; never
-  `build_site()` or deploy. Knit edited articles locally.
+- pkgdown: add new exports to `_pkgdown.yml`, then run `make site-check`.
+  Preview single pages only; never `build_site()` or deploy. Knit edited
+  articles locally.
 
 ## Testing
 - Bug fixes start with a failing regression test.
@@ -154,10 +154,11 @@ Audience: R novices who copy code verbatim. The code must run as pasted.
 ## Scope and safety
 - Minimal, on-topic changes. Log unrelated problems as issues.
 - Structural changes (file splits, DESCRIPTION dependencies, class redesign)
-  need an approved ADR in `dev/adr/`; propose via an issue. If the package
-  uses renv, update the lockfile when dependencies change.
-- Never edit `.claude/settings.json`, `Makefile`, `dev/hooks/`, or this file.
-  Propose changes instead.
+  need an approved ADR in `dev/adr/` (see its README); propose via an
+  issue. If the package uses renv, update the lockfile when dependencies
+  change.
+- Never edit `.claude/settings.json`, `Makefile`, `dev/hooks/`, `.lintr`, or
+  this file. Propose changes instead.
 - Never delete files, run `git clean`, or force-push. Ask the developer.
 - No secrets, tokens, or absolute local paths in commits.
 - Flag any effect on related packages named in AGENTS.md.

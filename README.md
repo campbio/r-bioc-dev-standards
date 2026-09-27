@@ -22,8 +22,13 @@ Each package that uses the standards contains a small startup hook,
 `dev/hooks/load-standards.sh`, registered in its `.claude/settings.json`.
 When a Claude Code session starts, resumes, is cleared, or is compacted,
 the hook downloads `standards.md` from this repo and adds it to Claude's
-context. If GitHub can't be reached, it
-uses the last downloaded copy and tells Claude that copy may be out of date.
+context. If GitHub can't be reached, it uses the last downloaded copy and
+tells Claude that copy may be out of date.
+
+A second hook, `dev/hooks/lint-changed.sh`, runs lintr on each R file right
+after Claude edits it and passes any lints back to Claude, so style problems
+are caught as the code is written rather than in CI. It only reports; it
+never rewrites the file.
 
 Each package's own `AGENTS.md` adds what's specific to that package: its
 structure, slow tests, related packages, and any exceptions to these
@@ -45,12 +50,15 @@ your fork, and adapt the rules to your project.
 | `README.md` | The full explanation of each rule (this file) |
 | `ADOPTING.md` | Steps to set up a package |
 | `hooks/load-standards.sh` | The startup hook, copied into each package's `dev/hooks/` |
+| `hooks/lint-changed.sh` | The after-edit lint hook, copied into each package's `dev/hooks/` |
 | `templates/settings.json` | Hook registration and permissions for `.claude/settings.json` |
 | `templates/Makefile` | The standard `make` targets |
+| `templates/.lintr` | lintr settings matching BiocCheck (80 columns, 4-space indent) |
+| `templates/dev/adr/` | Decision record (ADR) template and index |
 | `templates/AGENTS.md`, `templates/CLAUDE.md` | Starting points for package-specific notes |
 | `templates/github/workflows/sync-stable.yaml` | Keeps `main`/`master` matching the current release, and tags releases |
 | `templates/github/workflows/pr-base-devel.yaml` | Fails PRs aimed at the stable branch |
-| `templates/github/pull_request_template.md` | PR template with the base-branch reminder and a checklist |
+| `templates/github/pull_request_template.md` | PR template: base-branch reminder, checklist, ADR link, scientific-correctness and generated-content sections |
 
 ## What you need on your machine
 
@@ -128,20 +136,29 @@ showing it to you.
 
 Claude stops before pushing anything. It summarizes the change, lists
 anything it couldn't verify, and shows the branch's commits and full diff.
-You review the whole branch and either approve it or ask for changes, which
-become new or amended local commits.
+It also says whether the change alters results: numbers, model output, or
+what a plot shows. You review the whole branch and either approve it or ask
+for changes, which become new or amended local commits.
 
 This is the most important rule in the process. Agents can produce a lot of
 plausible-looking code quickly. The hand-off guarantees that a person has
 read every change before anyone else sees it.
+
+Reading the code isn't the same as checking the science. Tests confirm that
+code does what its author expected, not that the expectation was right. When
+a change alters results, a person who knows the method checks that the new
+output is scientifically correct, and says who checked and how in the PR.
 
 ### 6. Push and open a pull request
 
 Only after your approval does the branch get pushed, followed by a PR
 against `devel`. Note that GitHub suggests the default branch (`main` or
 `master`) as the base, so change it to `devel`; a check fails any PR aimed
-at the stable branch. A good PR description says what changed,
-why, and how it was tested, and links the related issue.
+at the stable branch. The PR template asks what changed, why, and how it
+was tested, and has a checklist, a link to any ADR, and a note of which
+parts an AI agent wrote, so reviewers know where to look hardest. Its
+"Scientific correctness" section is for a person only; Claude never fills
+it in.
 
 GitHub Actions then runs R CMD check and the linter on the PR. If something
 fails, fix it on the same branch and push again. The PR updates
@@ -240,6 +257,7 @@ All building, testing, and checking goes through the package's Makefile:
 | `make bioccheck` | Runs BiocCheck and prints the tarball size | Before a PR |
 | `make docs` | Regenerates `man/*.Rd` and `NAMESPACE` from roxygen | After editing roxygen comments |
 | `make lint` | Runs lintr | Any time |
+| `make site-check` | Checks the pkgdown reference index lists every export, without building the site | After adding an export |
 
 Using the same commands everywhere means everyone runs checks the same way,
 and Claude Code's permission settings can allow exactly these commands
@@ -248,11 +266,12 @@ rather than improvising, and it uses these targets even when a skill
 suggests raw `R CMD` commands.
 
 A package can add its own targets, such as `build` or `clean` for a package
-with compiled code. List them in the package's AGENTS.md, along with whether
-Claude may run each one without asking. Claude asks before running any
-extra target that isn't marked safe there, and anything that deletes files
-should stay a target for people only. Add safe extra targets to the
-allow-list in `.claude/settings.json` so Claude isn't prompted for them.
+with compiled code, or `app` to launch a Shiny app. List them in the
+package's AGENTS.md, along with whether Claude may run each one without
+asking. Claude asks before running any extra target that isn't marked safe
+there, and anything that deletes files should stay a target for people
+only. Add safe extra targets to the allow-list in `.claude/settings.json` so
+Claude isn't prompted for them.
 
 The two check levels reflect a common practice of checking in two rounds.
 The quick check catches most problems fast. The full check also rebuilds
@@ -331,6 +350,12 @@ R idioms.
   `print()` or `cat()`. Run styler on new files only. Restyling existing
   code in a functional change buries the real change in the diff, so lint
   cleanup gets its own PR.
+- **lintr settings:** lintr expects 2-space indentation by default, which
+  contradicts BiocCheck, so each package needs a `.lintr` file.
+  `templates/.lintr` sets 80 columns and 4-space indentation, accepts
+  camelCase or snake_case names, and turns off a few linters that are noisy
+  in Bioconductor code. A package that uses only one naming style can
+  narrow `object_name_linter` to it.
 
 ## Documentation and data
 
@@ -349,8 +374,9 @@ R idioms.
   `@source` if the data came from elsewhere.
 - **NEWS:** add a NEWS.md entry with every user-facing change as you make
   it, rather than reconstructing the list at release time.
-- **pkgdown:** new exports go in the `_pkgdown.yml` reference index. Preview
-  single pages locally, and leave full site builds and deployment to CI.
+- **pkgdown:** new exports go in the `_pkgdown.yml` reference index; check
+  with `make site-check`. Preview single pages locally, and leave full site
+  builds and deployment to CI.
   Knit edited articles locally, since R CMD check doesn't run them.
 
 ## Testing
@@ -374,7 +400,10 @@ logic. Its server code only connects inputs to exported, tested package
 functions, and any new feature is written as a package function first. R
 CMD check doesn't look inside `inst/`, so logic kept in the app would go
 untested. Test the app's reactive logic with `shiny::testServer()`, and
-check UI changes by running the app and taking a screenshot.
+check UI changes by running the app and taking a screenshot. Give the
+package an `app` target that launches the app (for example
+`Rscript -e 'shiny::runApp(system.file("shiny", package = "<pkg>"))'`), and
+list it in AGENTS.md, so Claude has a sanctioned way to start it.
 
 ## Bioconductor versions and release fixes
 
@@ -434,10 +463,11 @@ release also includes the following:
 - **Structural changes** need a written decision record (ADR) in `dev/adr/`,
   proposed through an issue and approved first. These include splitting
   files, adding or removing dependencies, and redesigning classes. They
-  affect everyone working on the package. If the package uses renv, update
-  its lockfile when dependencies change.
+  affect everyone working on the package. `templates/dev/adr/` has an ADR
+  template and a README explaining when one is needed. If the package uses
+  renv, update its lockfile when dependencies change.
 - **Guardrails:** Claude doesn't edit its own guardrails: the Claude
-  settings, the Makefile, the hooks, or these standards. It proposes
+  settings, the Makefile, the hooks, `.lintr`, or these standards. It proposes
   changes instead, so rules can't be loosened by the agent they constrain.
 - **Destructive commands:** Claude never deletes files, runs `git clean`, or
   force-pushes. Anything destructive is done by a person.

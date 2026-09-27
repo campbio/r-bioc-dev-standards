@@ -1,0 +1,17 @@
+linters: linters_with_defaults(
+    line_length_linter = line_length_linter(80),
+    indentation_linter = indentation_linter(indent = 4L),
+    object_name_linter = object_name_linter(
+      styles = c("camelCase", "snake_case", "symbols")
+    ),
+    object_length_linter = NULL,
+    commented_code_linter = NULL,
+    return_linter = NULL,
+    object_usage_linter = NULL
+  )
+exclusions: list(
+    "renv",
+    "docs",
+    "man"
+  )
+encoding: "UTF-8"

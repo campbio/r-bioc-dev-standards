@@ -1,7 +1,7 @@
 # Standard targets expected by r-bioc-dev-standards.
 # Run `make help` to list them. Recipe lines must start with a tab.
 
-.PHONY: help docs test test-one check check-full bioccheck lint coverage
+.PHONY: help docs test test-one check check-full bioccheck lint coverage site-check
 
 help:  ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | \
@@ -35,3 +35,6 @@ lint:  ## Run lintr on the package (reports only; changes nothing)
 
 coverage:  ## Print test coverage, overall and per file
 	Rscript -e 'print(covr::package_coverage())'
+
+site-check:  ## Check the pkgdown reference index lists every export (no site build)
+	Rscript -e 'pkgdown::check_pkgdown()'
