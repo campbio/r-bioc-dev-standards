@@ -28,12 +28,13 @@ as described under "What you need on your machine" in the README.
    existing lists. The hook commands use paths relative to the package root
    (`bash dev/hooks/...`), so start `claude` from the package root.
 
-   The permissions let Claude run the standard `make` targets and read-only
-   or local git commands without asking. They block pushes to Bioconductor,
-   force-pushes, branch deletion, recursive deletes, and edits to generated
-   files and to the guardrails themselves. `git push` and `gh pr create` are
-   deliberately left out of the allow list, so Claude must ask you each
-   time. That prompt is your hand-off checkpoint.
+   The permissions let Claude run the standard `make` targets and a short
+   list of safe git commands without asking; any other git command asks
+   first. They block pushes to Bioconductor, force-pushes, recursive
+   deletes, and edits to generated files and to the guardrails themselves.
+   `git push` and `gh pr create` are deliberately left out of the allow
+   list, so Claude must ask you each time. That prompt is your hand-off
+   checkpoint.
 
 3. **Provide the standard `make` targets and lint settings.** The standards
    expect `test`, `test-one`, `check`, `check-full`, `bioccheck`, `docs`,
