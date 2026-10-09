@@ -64,7 +64,11 @@ check jq -e --slurpfile b "$base" '
 cp "$out" "$work/good.json"
 
 # 4. Unsupported keys fail and leave the settings alone.
-for bad in '{"env": {"X": "1"}}' '{"permissions": {"defaultMode": "auto"}}' '{ not json'; do
+for bad in '{"env": {"X": "1"}}' '{"permissions": {"defaultMode": "auto"}}' '{ not json' \
+    '{"hooks": {"PostToolUse": {"matcher": "Bash", "hooks": []}}}' \
+    '{"permissions": {"allow": [{"x": 1}]}}' \
+    '{"permissions": {"deny": ["a"]}, "permissions": {"deny": ["b"]}}' \
+    '"just a string"'; do
   name="rejects additions $bad"
   printf '%s\n' "$bad" > dev/claude-settings.json
   if ! make -s claude-setup > /dev/null 2>&1 && cmp -s "$out" "$work/good.json"; then
@@ -106,6 +110,21 @@ check cmp -s .claude/settings.local.json "$work/local.json"
 # 9. Listed by make help.
 name="make help lists claude-setup"
 check sh -c 'make -s help | grep -q "^  claude-setup "'
+
+# 10. Refuses in a package that still commits .claude/settings.json, so
+# the package's own rules aren't silently dropped.
+name="refuses while .claude/settings.json is tracked"
+mkdir -p "$work/tracked" && cd "$work/tracked" || exit 1
+cp "$repo/templates/Makefile" Makefile
+mkdir -p .claude
+echo '{"permissions": {"allow": ["Bash(git fetch campbio)"]}}' > .claude/settings.json
+cp .claude/settings.json "$work/tracked.json"
+git init -q . && git add .claude/settings.json
+msg="$(make -s claude-setup 2>&1)"
+status=$?
+if [ $status -ne 0 ] && printf '%s' "$msg" | grep -q "Migrating a package that tracks" \
+   && cmp -s .claude/settings.json "$work/tracked.json"; then ok "$name"; else fail "$name"; fi
+cd "$work/pkg" || exit 1
 
 echo
 echo "Test files are in $work"
