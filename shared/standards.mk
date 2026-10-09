@@ -4,6 +4,8 @@
 # copy, which dev/hooks/load-standards.sh refreshes at every Claude session
 # start (or run `make standards-update`). Package-specific settings go above
 # the include in the package's Makefile; extra targets go below it.
+# `make claude-setup` writes .claude/settings.json, which packages don't
+# commit (BiocCheck rejects a tracked .claude/).
 #
 # Settings a package can change (set them above the include):
 #   FORCE_SUGGESTS  TRUE: check and check-full fail if any Suggests package
@@ -23,7 +25,7 @@ ifneq ($(filter test-one,$(MAKECMDGOALS)),)
   endif
 endif
 .PHONY: help docs test test-one check check-full bioccheck lint coverage \
-  site-check article standards-update
+  site-check article standards-update claude-setup
 
 help:  ## List targets
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | \
@@ -81,3 +83,58 @@ article:  ## Render one article to a temp folder: make article FILTER=<name>
 standards-update:  ## Re-download this file of shared targets
 	curl -fsSL --max-time 30 "$(R_BIOC_STANDARDS_BASE)/shared/standards.mk" -o "$(STANDARDS_MK).tmp"
 	mv -f "$(STANDARDS_MK).tmp" "$(STANDARDS_MK)"
+
+# Claude Code's settings for this clone: the shared base (downloaded next to
+# this file, at the same ref) plus the package's own rules in
+# dev/claude-settings.json. Lists and hooks are appended; the package file
+# can't remove a base rule. Each developer runs this once per clone, and
+# again after the settings change. Claude may not run it, since it writes
+# Claude's own permissions.
+CLAUDE_BASE_JSON := $(dir $(STANDARDS_MK))claude-settings.json
+
+# The merge, in R. It's passed in single quotes, so it has none, and $$ is a
+# literal $. The package file must have only the keys merged below, each
+# permission list an array of strings, and each hook event an array of
+# objects; anything else stops with an error, leaving the settings alone.
+_cs_read = rd <- function(p) jsonlite::read_json(p, simplifyVector = FALSE); \
+  s <- rd(Sys.getenv("BASE")); add <- Sys.getenv("ADD"); \
+  a <- if (file.exists(add)) rd(add) else list()
+_cs_check = obj <- function(x) is.list(x) && (length(x) == 0 || (!is.null(names(x)) && !anyDuplicated(names(x)))); \
+  arr <- function(x) is.list(x) && is.null(names(x)); \
+  strs <- function(x) is.null(x) || (arr(x) && all(vapply(x, function(v) is.character(v) && length(v) == 1, NA))); \
+  shape <- function() stop(add, " is not shaped like Claude Code settings: permission lists must be arrays of strings, each hook event an array of objects, and no key repeated.", call. = FALSE); \
+  if (!obj(a)) shape(); p <- a[["permissions"]]; h <- a[["hooks"]]; \
+  bad <- c(setdiff(names(a), c("$$schema", "permissions", "hooks")), setdiff(names(p), c("allow", "ask", "deny"))); \
+  if (length(bad)) stop(add, " has keys claude-setup does not merge: ", paste(bad, collapse = ", "), call. = FALSE); \
+  if (!(is.null(p) || obj(p)) || !all(vapply(p, strs, NA))) shape(); \
+  if (!(is.null(h) || obj(h)) || !all(vapply(h, function(e) arr(e) && all(vapply(e, obj, NA)), NA))) shape()
+_cs_merge = for (k in c("allow", "ask", "deny")) s[["permissions"]][[k]] <- unique(c(s[["permissions"]][[k]], p[[k]])); \
+  for (e in names(h)) s[["hooks"]][[e]] <- c(s[["hooks"]][[e]], h[[e]]); \
+  out <- Sys.getenv("OUT"); jsonlite::write_json(s, paste0(out, ".tmp"), auto_unbox = TRUE, pretty = TRUE); \
+  stopifnot(file.rename(paste0(out, ".tmp"), out))
+
+claude-setup:  ## Write .claude/settings.json (people only; once per clone)
+	@if [ -n "$$CLAUDECODE" ]; then \
+	  echo "make claude-setup is for people only: it writes Claude's own permissions."; \
+	  echo "Run it in a terminal outside Claude Code (not with !, which runs inside it)."; exit 1; \
+	fi
+	@if git ls-files --error-unmatch .claude/settings.json > /dev/null 2>&1; then \
+	  echo "This package still commits .claude/settings.json, and make claude-setup would drop its own rules."; \
+	  echo "First follow \"Migrating a package that tracks .claude/\" in ADOPTING.md."; exit 1; \
+	fi
+	@mkdir -p "$(dir $(CLAUDE_BASE_JSON))"
+	@if curl -fsSL --max-time 30 "$(R_BIOC_STANDARDS_BASE)/shared/claude-settings.json" -o "$(CLAUDE_BASE_JSON).tmp" \
+	    && [ -s "$(CLAUDE_BASE_JSON).tmp" ]; then \
+	  mv -f "$(CLAUDE_BASE_JSON).tmp" "$(CLAUDE_BASE_JSON)"; \
+	else \
+	  rm -f "$(CLAUDE_BASE_JSON).tmp"; \
+	  if [ -s "$(CLAUDE_BASE_JSON)" ]; then \
+	    echo "NOTE: Couldn't download the shared settings; using the cached copy, which may be out of date."; \
+	  else \
+	    echo "Couldn't download $(R_BIOC_STANDARDS_BASE)/shared/claude-settings.json, and there is no cached copy."; exit 1; \
+	  fi; \
+	fi
+	@mkdir -p .claude
+	@BASE="$(CLAUDE_BASE_JSON)" ADD=dev/claude-settings.json OUT=.claude/settings.json \
+	  Rscript -e '$(_cs_read); $(_cs_check); $(_cs_merge)'
+	@echo "Wrote .claude/settings.json. Start (or restart) claude in this folder for it to take effect."

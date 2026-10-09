@@ -9,6 +9,12 @@ https://raw.githubusercontent.com/campbio/r-bioc-dev-standards/v1/standards.md
 starting, and follow it; those agents also aren't bound by
 `.claude/settings.json`.
 
+In Claude Code, if the standards aren't in your context at session start,
+this clone has no `.claude/settings.json`, so neither the standards nor
+the permission guardrails are active: stop, and ask the developer to run
+`make claude-setup` in a terminal outside Claude Code (not with `!`, which
+runs inside it and is refused), then restart `claude`.
+
 ## About
 
 <One or two sentences: what the package does and who uses it.>
@@ -33,8 +39,8 @@ optional dependencies that tests skip without.>
 <Targets beyond the standard set, what each does, and whether agents may
 run it without asking (e.g. "`build`: builds the tarball in the repo root;
 ask first", "`clean`: deletes compiled objects; people only"). Safe targets
-go in the settings allow-list and people-only ones in its deny list. Write
-"None" if there are none.>
+go in the allow list in `dev/claude-settings.json` and people-only ones in
+its deny list. Write "None" if there are none.>
 
 ## Setup in a new worktree
 

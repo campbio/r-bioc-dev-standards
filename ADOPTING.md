@@ -10,6 +10,13 @@ pull request, like any other change. The files to copy are in `hooks/` and
 Install Claude Code, the Superpowers plugin, and the two Bioconductor skills,
 as described under "What you need on your machine" in the README.
 
+## Once per clone
+
+In each new clone of a package that has adopted the standards, run
+`make claude-setup` in a terminal before starting `claude`. It refuses to
+run inside Claude Code, including with `!`. Run it again after pulling a
+change to `dev/claude-settings.json`.
+
 ## Once per package
 
 1. **Add the hooks.** Copy `hooks/load-standards.sh` and
@@ -20,13 +27,22 @@ as described under "What you need on your machine" in the README.
    of these standards, set `R_BIOC_STANDARDS_BASE` in `load-standards.sh`
    and the Makefile to your fork's raw-file URL.
 
-2. **Register the hook and permissions.** Copy `templates/settings.json` to
-   `.claude/settings.json`. If the package already has one, merge the
-   template's entries into it: add the `SessionStart` and `PostToolUse`
-   blocks inside the existing `"hooks"` object (replacing any older
-   `lint-changed.sh` entry), and add the `allow` and `deny` rules to the
-   existing lists. The hook commands use paths relative to the package root
-   (`bash dev/hooks/...`), so start `claude` from the package root.
+2. **Register the hooks and permissions.** Claude Code reads them from
+   `.claude/settings.json`, but packages don't commit that file:
+   BiocCheck (1.49 and later) fails a package whose Git repository tracks
+   anything under `.claude/`. Instead, `make claude-setup` (step 3 adds
+   the Makefile) writes it by combining the shared settings, downloaded
+   at the same tag as the other shared files, with the package's own
+   rules in `dev/claude-settings.json`. Copy
+   `templates/dev/claude-settings.json` to `dev/claude-settings.json` and
+   put only package-specific rules in it; its lists are added to the
+   shared ones, and it can't remove a shared rule. Each developer runs
+   `make claude-setup` once in each clone, and again after pulling a
+   change to `dev/claude-settings.json` or when the maintainer announces
+   a settings change. Claude can't run it. Add `.claude` to `.gitignore`
+   now (see step 5), so the generated file is never committed. The hook
+   commands use paths relative to the package root (`bash dev/hooks/...`),
+   so start `claude` from the package root.
 
    The permissions let Claude run the standard `make` targets and a short
    list of safe git commands without asking; any other git command asks
@@ -34,9 +50,10 @@ as described under "What you need on your machine" in the README.
    deletes, and edits to generated files and to the guardrails themselves.
    `git push`, `gh pr create`, and branch deletion are ask rules, so Claude
    must ask you each time, even in auto mode. That prompt is your hand-off
-   checkpoint. Add a `Bash(git fetch <remote>)` allow rule for each remote
-   the package uses (for example the org-named shared remote); the
-   template covers `origin`, `upstream`, and `bioc`.
+   checkpoint. Add a `Bash(git fetch <remote>)` allow rule to
+   `dev/claude-settings.json` for each remote the package uses (for
+   example the org-named shared remote); the shared settings cover
+   `origin`, `upstream`, and `bioc`.
 
 3. **Provide the standard `make` targets and lint settings.** The standards
    expect `test`, `test-one`, `check`, `check-full`, `bioccheck`, `docs`,
@@ -52,7 +69,8 @@ as described under "What you need on your machine" in the README.
    (step 4). For any that are for people only, set `PEOPLE_ONLY` in the
    Makefile's settings (e.g. `PEOPLE_ONLY := clean site-deploy`), which
    makes them refuse to run from Claude Code, and also add them to the
-   deny list in `.claude/settings.json`, e.g. `Bash(make clean)`.
+   deny list in `dev/claude-settings.json`, e.g. `Bash(make clean)`. Then
+   run `make claude-setup` (step 2).
    `site-check` fails unless `_pkgdown.yml` sets `url:` and the site URL
    appears in DESCRIPTION's `URL` field. In a package with no pkgdown site
    it doesn't apply; say so in AGENTS.md.
@@ -86,14 +104,23 @@ as described under "What you need on your machine" in the README.
    ^Makefile$
    ^\.lintr$
    ^\.worktrees$
+   ^\.worktreeinclude$
    ```
 
    Add these to `.gitignore`:
 
    ```
    .worktrees/
-   .claude/settings.local.json
+   .claude
    ```
+
+   `.claude/` holds the settings `make claude-setup` writes and each
+   developer's own `settings.local.json`; neither is committed. Write
+   `.claude` without a trailing slash: when the `gert` package isn't
+   installed, BiocCheck reads `.gitignore` itself and misses `.claude/`.
+
+   Copy `templates/.worktreeinclude` to the package root, so worktrees
+   that Claude Code creates get a copy of the generated settings.
 
    Commit `dev/plans/`, since plans are part of the record of a change.
 
@@ -144,9 +171,12 @@ as described under "What you need on your machine" in the README.
       restrict Actions; check **Settings → Actions → General → Workflow
       permissions**.
 
-8. **Verify.** Start a new `claude` session in the package and approve the
-   changed hooks when asked. Then ask: "Which remote do the standards say
-   never to push to, and when may a pull request be opened?" Claude should
+8. **Verify.** Start a new `claude` session in the package, accepting the
+   folder-trust prompt if it appears. If Claude says the standards weren't
+   loaded, `.claude/settings.json` is missing; run `make claude-setup`.
+   Then ask:
+   "Which remote do the standards say never to push to, and when may a
+   pull request be opened?" Claude should
    answer from the standards without reading any files: never push to
    Bioconductor, and open a PR only after you've reviewed the branch. If it
    can't, run the hook by hand to see its output:
@@ -161,10 +191,12 @@ change.
 
 A package still needs its own edit when:
 
-- a new standard `make` target is added, since each package's
-  `.claude/settings.json` allow-list names the targets;
-- a package-specific file changes: `.claude/settings.json`, `AGENTS.md`,
-  `.lintr`, the PR template, `.Rbuildignore`, or `.gitignore`;
+- the shared settings (`shared/claude-settings.json`) change: each
+  developer re-runs `make claude-setup`, but nothing in the package is
+  edited;
+- a package-specific file changes: `dev/claude-settings.json`,
+  `AGENTS.md`, `.lintr`, the PR template, `.Rbuildignore`, or
+  `.gitignore`;
 - a breaking change is published as `v2` (the package moves when ready).
 
 ## Migrating a package adopted before shared delivery
@@ -178,7 +210,31 @@ copies that no longer update. Replace them once:
    package's extra targets below the include, and any settings above it.
 3. Replace `.github/workflows/sync-stable.yaml` and `pr-base-devel.yaml`
    with the templates, keeping the repo's `stable-branch` value.
-4. In `.claude/settings.json`, add the two
-   `~/.cache/r-bioc-dev-standards/**` deny rules from the template. The
-   hook commands don't change.
-5. Run `make help` and confirm it lists the standard targets.
+4. Run `make help` and confirm it lists the standard targets.
+5. Then follow "Migrating a package that tracks `.claude/`" below.
+
+## Migrating a package that tracks `.claude/`
+
+Packages adopted before `make claude-setup` existed commit
+`.claude/settings.json`, which BiocCheck 1.49 and later reports as an
+error. Move them over once, on a branch:
+
+1. Copy `templates/dev/claude-settings.json` to `dev/claude-settings.json`
+   and `templates/.worktreeinclude` to the package root, and add
+   `^\.worktreeinclude$` to `.Rbuildignore`. Compare the package's
+   `.claude/settings.json` with `shared/claude-settings.json` in this
+   repo, and copy into the new file only the entries the shared one
+   lacks, such as the package's `git fetch` remotes, extra make targets,
+   or people-only denies. If the package's AGENTS.md lacks the paragraph
+   starting "In Claude Code, if the standards aren't in your context" in
+   `templates/AGENTS.md`, copy it in, so Claude stops in a clone that
+   hasn't run `make claude-setup`.
+2. Replace `.claude/settings.local.json` in `.gitignore` with `.claude`
+   (no trailing slash; see step 5 above), then stop tracking the folder
+   without deleting your copy: `git rm -r --cached .claude`
+3. Run `make claude-setup` and compare the result with the old file:
+   `git show HEAD:.claude/settings.json | diff - .claude/settings.json`.
+   Only the order of entries and the newer shared rules should differ.
+4. Commit and open a PR. Say in its description that **pulling it deletes
+   each developer's `.claude/settings.json`**, so everyone must run
+   `make claude-setup` after pulling.

@@ -7,9 +7,10 @@
 #   shared/lint-changed.sh   run by the dev/hooks/lint-changed.sh stub
 #   shared/standards.mk      the standard targets, included by the Makefile
 #
-# Copy this file to dev/hooks/load-standards.sh in each package and register
-# it in .claude/settings.json (see ADOPTING.md). It rarely changes: the
-# shared files update centrally when the maintainer moves the v1 tag.
+# Copy this file to dev/hooks/load-standards.sh in each package; `make
+# claude-setup` registers it in .claude/settings.json (see ADOPTING.md). It
+# rarely changes: the shared files update centrally when the maintainer
+# moves the v1 tag.
 #
 # Source: https://github.com/campbio/r-bioc-dev-standards
 #
