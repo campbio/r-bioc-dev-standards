@@ -38,8 +38,8 @@ optional dependencies that tests skip without.>
 <Targets beyond the standard set, what each does, and whether agents may
 run it without asking (e.g. "`build`: builds the tarball in the repo root;
 ask first", "`clean`: deletes compiled objects; people only"). Safe targets
-go in the settings allow-list and people-only ones in its deny list. Write
-"None" if there are none.>
+go in the allow list in `dev/claude-settings.json` and people-only ones in
+its deny list. Write "None" if there are none.>
 
 ## Setup in a new worktree
 

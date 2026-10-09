@@ -38,9 +38,10 @@ asked. Run it again after pulling a change to `dev/claude-settings.json`.
    shared ones, and it can't remove a shared rule. Each developer runs
    `make claude-setup` once in each clone, and again after pulling a
    change to `dev/claude-settings.json` or when the maintainer announces
-   a settings change. Claude can't run it. The hook commands use paths
-   relative to the package root (`bash dev/hooks/...`), so start `claude`
-   from the package root.
+   a settings change. Claude can't run it. Add `.claude` to `.gitignore`
+   now (see step 5), so the generated file is never committed. The hook
+   commands use paths relative to the package root (`bash dev/hooks/...`),
+   so start `claude` from the package root.
 
    The permissions let Claude run the standard `make` targets and a short
    list of safe git commands without asking; any other git command asks
@@ -222,7 +223,10 @@ error. Move them over once, on a branch:
    `.claude/settings.json` with `shared/claude-settings.json` in this
    repo, and copy into the new file only the entries the shared one
    lacks, such as the package's `git fetch` remotes, extra make targets,
-   or people-only denies.
+   or people-only denies. If the package's AGENTS.md lacks the paragraph
+   starting "In Claude Code, if the standards aren't in your context" in
+   `templates/AGENTS.md`, copy it in, so Claude stops in a clone that
+   hasn't run `make claude-setup`.
 2. Replace `.claude/settings.local.json` in `.gitignore` with `.claude`
    (no trailing slash; see step 5 above), then stop tracking the folder
    without deleting your copy: `git rm -r --cached .claude`
