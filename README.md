@@ -23,7 +23,11 @@ pieces that fetch or call them, so a fix made here reaches every package
 without editing each one. There are three ways a file gets to a package:
 
 - **Downloaded at session start.** Each package has a startup hook,
-  `dev/hooks/load-standards.sh`, registered in its `.claude/settings.json`.
+  `dev/hooks/load-standards.sh`, registered in `.claude/settings.json`,
+  which `make claude-setup` writes from the shared settings
+  (`shared/claude-settings.json`) and the package's
+  `dev/claude-settings.json`. That file isn't committed, because
+  BiocCheck (1.49 and later) rejects a tracked `.claude/` folder.
   When a Claude Code session starts, resumes, is cleared, or is compacted,
   the hook downloads `standards.md`, the lint hook, and the shared make
   targets (`shared/standards.mk`) into `~/.cache/r-bioc-dev-standards/`,
@@ -34,7 +38,7 @@ without editing each one. There are three ways a file gets to a package:
   and check PR base branches live in this repo's `.github/workflows/`.
   Each package has short workflows that call them.
 - **Copied once, then edited per package.** Files that differ between
-  packages (`.claude/settings.json`, `AGENTS.md`, `.lintr`, the PR
+  packages (`dev/claude-settings.json`, `AGENTS.md`, `.lintr`, the PR
   template) start from `templates/` and belong to the package afterwards.
 
 A second hook, `dev/hooks/lint-changed.sh`, runs lintr on each R file right
@@ -75,9 +79,11 @@ your fork, and adapt the rules to your project.
 | `hooks/lint-changed.sh` | Stub for the after-edit lint hook, copied once into each package's `dev/hooks/` |
 | `shared/lint-changed.sh` | The lint hook itself, downloaded at session start |
 | `shared/standards.mk` | The standard `make` targets, downloaded and included by each package's Makefile |
+| `shared/claude-settings.json` | Hook registration and permissions shared by every package; `make claude-setup` combines it with the package's own |
 | `.github/workflows/sync-stable.yaml` | Shared workflow: keeps `main`/`master` matching the current release, and tags releases |
 | `.github/workflows/pr-base-devel.yaml` | Shared workflow: fails PRs aimed at the stable branch |
-| `templates/settings.json` | Hook registration and permissions for `.claude/settings.json` |
+| `templates/dev/claude-settings.json` | Empty starting point for a package's own permission rules and hooks |
+| `templates/.worktreeinclude` | Makes Claude Code copy the generated settings into worktrees it creates |
 | `templates/Makefile` | A package Makefile: settings, the shared targets, and extra targets |
 | `templates/.lintr` | lintr settings: 80 columns, indentation set per package (4 spaces by default) |
 | `templates/dev/adr/` | Decision record (ADR) template and index |
@@ -291,6 +297,7 @@ All building, testing, and checking goes through the package's Makefile:
 | `make lint` | Runs lintr | Any time |
 | `make site-check` | Checks the pkgdown reference index lists every export, without building the site | After adding an export |
 | `make article FILTER=<name>` | Renders one vignette or pkgdown article into a temporary folder, leaving `docs/` alone | After editing an article |
+| `make claude-setup` | Writes `.claude/settings.json`; people only | Once per clone, and after the settings change |
 
 Using the same commands everywhere means everyone runs checks the same way,
 and Claude Code's permission settings can allow exactly these commands
@@ -311,7 +318,7 @@ with compiled code, or `app` to launch a Shiny app. List them in the
 package's AGENTS.md, along with whether Claude may run each one without
 asking. Claude asks before running any extra target that isn't marked safe
 there, and anything that deletes files should stay a target for people
-only. Add safe extra targets to the allow-list in `.claude/settings.json` so
+only. Add safe extra targets to the allow list in `dev/claude-settings.json` so
 Claude isn't prompted for them, and add people-only targets to its deny
 list (for example `Bash(make clean)`), so the rule is enforced rather than
 only written down.
@@ -336,16 +343,17 @@ cover the allowed commands' dangerous arguments: extra flags after
 `switch -c` or `checkout -b`, and `--output`, which makes `git diff` or
 `git log` write a file. `git fetch` is allowed only in exact forms
 (`git fetch`, `git fetch --all`, `git fetch <remote>`), since a fetch
-refspec such as `+devel:main` overwrites a local branch; add a line for
-each remote the package uses, such as `Bash(git fetch campbio)`. Leaving a
-command off the allow list only makes it prompt in manual mode; in auto
+refspec such as `+devel:main` overwrites a local branch; add a line to
+`dev/claude-settings.json` for each remote the package uses, such as
+`Bash(git fetch campbio)`. Leaving a command off the allow list only
+makes it prompt in manual mode; in auto
 mode the classifier may still approve it. So forced fetches are also
 denied outright: a `+` refspec, and fetch's `-f`/`--force` flags.
 
 **Checkpoints that hold in auto mode.** In auto mode a classifier approves
 commands instead of asking you, so leaving a command out of the allow list
 isn't enough to guarantee a prompt. Ask rules always prompt, even in auto
-mode, so the template lists `git push`, `gh pr create`, and deleting a
+mode, so the shared settings list `git push`, `gh pr create`, and deleting a
 branch as ask rules. That keeps the hand-off checkpoint: nothing leaves your
 machine, and no branch disappears, without your approval. If your own
 `~/.claude/settings.json` allows `git push`, change it to an ask rule too.
@@ -558,9 +566,10 @@ release also includes the following:
   template and a README explaining when one is needed. If the package uses
   renv, update its lockfile when dependencies change.
 - **Guardrails:** Claude doesn't edit its own guardrails: the Claude
-  settings, the Makefile, the hooks, `.lintr`, the downloaded copies in
-  `~/.cache/r-bioc-dev-standards/`, or these standards. It proposes changes
-  instead, so rules can't be loosened by the agent they constrain.
+  settings and `dev/claude-settings.json`, the Makefile, the hooks,
+  `.lintr`, the downloaded copies in `~/.cache/r-bioc-dev-standards/`, or
+  these standards, and it doesn't run `make claude-setup`. It proposes
+  changes instead, so rules can't be loosened by the agent they constrain.
 - **Destructive commands:** Claude never deletes files or branches, runs
   `git clean`, or force-pushes. Anything destructive is done by a person.
 - **Secrets:** never commit tokens, passwords, or paths specific to your
