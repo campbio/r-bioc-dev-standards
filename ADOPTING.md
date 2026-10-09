@@ -7,8 +7,9 @@ pull request, like any other change. The files to copy are in `hooks/` and
 
 ## Once per machine
 
-Install Claude Code, the Superpowers plugin, and the two Bioconductor skills,
-as described under "What you need on your machine" in the README.
+Install Claude Code, the superbrainstorming plugin, the two Bioconductor
+skills, and optionally the grill-me skill, as described under "What you
+need on your machine" in the README.
 
 ## Once per clone
 
@@ -122,7 +123,7 @@ change to `dev/claude-settings.json`.
    Copy `templates/.worktreeinclude` to the package root, so worktrees
    that Claude Code creates get a copy of the generated settings.
 
-   Commit `dev/plans/`, since plans are part of the record of a change.
+   Commit `dev/plans/`, since specs are part of the record of a change.
 
 6. **Check the remotes.** Run `git remote -v` in your clone and confirm
    each remote points where you expect, especially the Bioconductor one

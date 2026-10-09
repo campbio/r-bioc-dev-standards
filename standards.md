@@ -1,4 +1,4 @@
-# R/Bioconductor Package Development Standards v1.0
+# R/Bioconductor Package Development Standards v1.1
 
 Rules for developing R packages distributed through Bioconductor. Loaded
 at session start by a hook in each package. Rationale for each rule:
@@ -7,23 +7,28 @@ README.md in the r-bioc-dev-standards repo.
 ## Precedence
 1. Package AGENTS.md "Overrides"
 2. This file
-3. Skill defaults (Superpowers, Bioconductor, others)
+3. Skill and plugin defaults (superbrainstorming, Bioconductor, others)
 
 On conflict, follow the higher level and say so.
 
 ## Workflow
-1. EVALUATE, no edits. Bug: systematic-debugging, report root cause. Feature:
-   brainstorming. Dependency change: read upstream NEWS, list affected call
-   sites. Wait for go-ahead.
-2. PLAN: writing-plans. Cover whichever apply: code, docs, data, tests,
-   vignettes/articles, NEWS, version bump, checks, release port. Wait for
-   approval.
+1. EVALUATE, no edits. Bug: reproduce it, trace the root cause, report it
+   before proposing a fix. Feature: brainstorming. Dependency change: read
+   upstream NEWS, list affected call sites. Wait for go-ahead.
+2. SPEC: what changes, why, and how it is tested. Cover whichever apply:
+   code, docs, data, tests, vignettes/articles, NEWS, version bump, checks,
+   release port. Small change: in chat. Larger or unsure: a file in
+   `dev/plans/`, committed after branching. A brainstorming design is the
+   spec. No step-by-step implementation plan. Wait for approval.
 3. EXECUTE: fetch the shared repo's `devel`, then branch as `fix/<topic>` or
-   `feature/<topic>`. Never work on `devel` or `RELEASE_*`. Small plan:
-   executing-plans. Multi-task plan: subagent-driven-development. Use TDD
-   with testthat. Make small local commits whose messages say what and why.
-4. REVIEW: requesting-code-review against the plan, then `/code-review` on
-   the branch. Fix findings, or say why one doesn't apply.
+   `feature/<topic>` before writing code. Never work on `devel` or
+   `RELEASE_*`. Implement from the spec and stay within it. Test first with
+   testthat: each new test must fail on its assertion, not on a missing
+   function. Never weaken, skip, or delete a test to make it pass; if one
+   looks wrong, ask. Make small local commits that say what and why.
+4. REVIEW: give a fresh subagent the spec to check the diff against, then
+   run `/code-review` on the branch. Fix findings, or say why one doesn't
+   apply.
 5. HAND OFF: stop before anything leaves the machine. Give a summary, list
    anything unverified, say whether results, numbers, or plots change, and
    show `git log devel..HEAD` and `git diff devel...HEAD`. No push, PR, or
@@ -35,7 +40,7 @@ On conflict, follow the higher level and say so.
    person approves on GitHub. No local merges. No history rewrites after a
    push.
 
-Plans and designs go in `dev/plans/`, never `docs/`.
+Specs go in `dev/plans/`, never `docs/`, including `docs/specs/`.
 
 ## Remotes
 - Identify remotes by URL (`git remote -v`), not by name.

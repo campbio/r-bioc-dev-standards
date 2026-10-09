@@ -94,10 +94,14 @@ your fork, and adapt the rules to your project.
 ## What you need on your machine
 
 - **Claude Code.**
-- **The Superpowers plugin**, which provides the workflow skills referenced
-  throughout (brainstorming, writing plans, test-driven development, code
-  review). Install it once, from inside Claude Code:
-  `/plugin install superpowers@claude-plugins-official`
+- **The superbrainstorming plugin**, which provides the brainstorming skill
+  used to design features (step 1 below). Install it once, from inside
+  Claude Code:
+
+  ```
+  /plugin marketplace add harrymunro/superbrainstorming
+  /plugin install superbrainstorming@superbrainstorming
+  ```
 - **Two Bioconductor skills**, from Bioconductor's official
   [ai-agent-skills](https://github.com/Bioconductor/ai-agent-skills)
   repository:
@@ -110,6 +114,30 @@ your fork, and adapt the rules to your project.
   ```
 
   Run `git pull` in that clone now and then to get updates.
+- **Optional: the grill-me skill**, which you start with `/grill-me` to
+  have Claude question you about a spec or an issue you wrote, one round
+  of numbered questions at a time, until nothing is left assumed. It calls
+  a second skill, `grilling`, so link both:
+
+  ```bash
+  git clone https://github.com/mattpocock/skills.git ~/src/mattpocock-skills
+  ln -s ~/src/mattpocock-skills/skills/productivity/grill-me ~/.claude/skills/
+  ln -s ~/src/mattpocock-skills/skills/productivity/grilling ~/.claude/skills/
+  ```
+
+  Run `git pull` in that clone now and then. The `mattpocock-skills`
+  plugin also installs it, along with about 25
+  other skills you may not want.
+
+**Superpowers is optional.** Earlier versions of these standards required
+the [Superpowers](https://github.com/obra/superpowers) plugin for the whole
+workflow. With current models, its step-by-step implementation plans cost
+a lot of context and time without improving the result (see "Write a spec"
+below), so the standards now use only its brainstorming part, through
+superbrainstorming. You can still use Superpowers if you prefer it, but
+install it or superbrainstorming, not both: each has a `brainstorming`
+skill and a session-start hook. The standards override its defaults where
+they conflict, such as detailed implementation plans.
 
 The standards still make sense if a skill is missing: each step also
 describes what to do, so the process can be followed by hand.
@@ -125,21 +153,39 @@ leaves your machine.
 
 The first step changes no files. For a bug, Claude traces the problem to its
 root cause and reports it before proposing a fix; a fix aimed at a symptom
-often just moves the bug. For a feature, it asks questions until the design
-is clear. For a dependency change, such as a new version of an upstream
+often just moves the bug. It reproduces the bug first, so the fix can be
+shown to work. For a feature, the brainstorming skill asks questions one
+at a time until the design is clear, and suggests two or three approaches
+when there is a real choice. To have your own idea questioned harder, run
+`/grill-me`. For a dependency change, such as a new version of an upstream
 package, it reads that package's NEWS and lists every place in this
 package's code that the change affects. You then decide whether and how to
 proceed.
 
-### 2. Plan
+### 2. Write a spec
 
-Claude writes a step-by-step plan that covers everything the change touches:
-code, documentation, example data, tests, vignettes and articles, the NEWS
-entry, the version bump, checks, and, for release bugs, the port to the
-release branch. Plans are saved in `dev/plans/`. They can't go in `docs/`,
-because pkgdown generates that folder and overwrites it.
+Claude writes a spec: what will change, why, and how it will be tested. It
+covers everything the change touches: code, documentation, example data,
+tests, vignettes and articles, the NEWS entry, the version bump, checks,
+and, for release bugs, the port to the release branch. A small change gets
+a few sentences in the chat. A larger one, or one where it's unclear, gets
+a file in `dev/plans/`, committed once the work branch exists. Specs
+can't go in `docs/`, because pkgdown generates that folder and overwrites
+it; this includes `docs/specs/`, where superbrainstorming saves them by
+default.
 
-Review the plan before approving it. Correcting a wrong approach in a plan
+When the brainstorming skill produced a design, that design is the spec.
+Superbrainstorming starts building as soon as you approve its design; the
+standards first have Claude create the work branch (step 3).
+
+A spec is not a step-by-step implementation plan. Current models do better
+building from a spec than following a script of every edit, and long plans
+take time to write and review and fill the context the model needs for the
+work itself. (This repo's own change to untrack the Claude settings had
+780 lines of design and plan for about 330 lines of change.) Keep the spec
+in proportion to the change.
+
+Review the spec before approving it. Correcting a wrong approach in a spec
 takes minutes; correcting it after implementation takes hours.
 
 ### 3. Execute on a new branch
@@ -149,9 +195,20 @@ latest `devel` from the shared GitHub repo. Starting from current code
 avoids merge conflicts later. Then create a branch named `fix/<topic>` or
 `feature/<topic>`.
 
+Claude builds from the approved spec and stays within it. Problems it
+notices elsewhere are logged as issues rather than fixed on the way, which
+keeps the diff reviewable.
+
 Code is written test-first. For each piece of behavior, write a testthat
 test, confirm it fails, then write the code that makes it pass. A test that
-has never failed may not be testing anything.
+has never failed may not be testing anything. The failure has to be the
+right one: the assertion fails because the behavior is wrong, not because
+the function doesn't exist yet. A test that fails with "could not find
+function" says nothing about whether its assertions work.
+
+Claude never weakens, skips, or deletes a test to make it pass. If a test
+looks wrong, it says so and asks. A test changed to match the code no
+longer checks anything.
 
 Claude commits locally as it goes, in small commits whose messages say what
 changed and why. Local commits are checkpoints: they make it easy to see how
@@ -160,12 +217,14 @@ Nothing leaves your machine yet.
 
 ### 4. Review
 
-Claude reviews its own work against the plan, then runs `/code-review` on
-the whole branch, and fixes what it finds before showing it to you. Where a
-finding doesn't apply, it says why. The two reviews catch different things:
-the first checks that the plan was carried out, and `/code-review` looks for
-bugs and risks in the diff itself, including in files the plan didn't
-mention.
+A fresh subagent, which hasn't seen the work being done, is given the
+spec and checks the diff against it. Then Claude runs `/code-review` on the whole branch and
+fixes what it finds before showing it to you. Where a finding doesn't
+apply, it says why. The two reviews catch different things: the first
+checks that the spec was carried out, and nothing more, and `/code-review`
+looks for bugs and risks in the diff itself, including in files the spec
+didn't mention. A reviewer with a fresh context is more likely to question
+the work than the session that wrote it.
 
 ### 5. Hand off to the developer
 
@@ -577,7 +636,7 @@ release also includes the following:
 - **Related packages:** when packages you maintain depend on each other or
   share code, list them in each package's AGENTS.md, on both sides and
   describing the relationship the same way. A change that could affect a
-  related package is then flagged in the plan.
+  related package is then flagged in the spec.
 - **Maintainer docs**, such as release checklists, roadmaps, ADRs, and plans,
   live in `dev/`, which is excluded from the package build.
 
@@ -608,8 +667,14 @@ package belong in that package's `AGENTS.md`.
 
 ## Sources
 
-- [Superpowers](https://github.com/obra/superpowers): workflow skills for
-  Claude Code
+- [superbrainstorming](https://github.com/harrymunro/superbrainstorming):
+  the brainstorming skill from Superpowers, without the rest of the workflow
+- [mattpocock/skills](https://github.com/mattpocock/skills): source of the
+  optional grill-me skill
+- [Superpowers](https://github.com/obra/superpowers): the full workflow
+  plugin the standards used before v1.1; optional
+- ["Opus 5.5 - is the Superpowers skill still needed?"](https://www.reddit.com/r/ClaudeAI/comments/1wt84ix/opus_55_is_the_superpowers_skill_still_needed/)
+  (r/ClaudeAI): the discussion behind the v1.1 workflow changes
 - [Bioconductor ai-agent-skills](https://github.com/Bioconductor/ai-agent-skills):
   official Bioconductor skills
 - [Bioconductor developer guide](https://contributions.bioconductor.org/):

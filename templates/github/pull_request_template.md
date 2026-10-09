@@ -16,7 +16,7 @@
 - [ ] New exports added to `_pkgdown.yml`, and `make site-check` passes
 - [ ] NEWS.md updated for user-facing changes
 - [ ] Version bumped (z) if this will be pushed to Bioconductor
-- [ ] Plan review and `/code-review` run; findings fixed or answered
+- [ ] Spec review and `/code-review` run; findings fixed or answered
 - [ ] Related issue linked
 - [ ] Shiny only: verified with a screenshot of the running app
 
