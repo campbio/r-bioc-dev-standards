@@ -224,8 +224,8 @@ error. Move them over once, on a branch:
    lacks, such as the package's `git fetch` remotes, extra make targets,
    or people-only denies.
 2. Replace `.claude/settings.local.json` in `.gitignore` with `.claude`
-   (no trailing slash; see step 5 above), then stop tracking the folder without deleting your copy:
-   `git rm -r --cached .claude`
+   (no trailing slash; see step 5 above), then stop tracking the folder
+   without deleting your copy: `git rm -r --cached .claude`
 3. Run `make claude-setup` and compare the result with the old file:
    `git show HEAD:.claude/settings.json | diff - .claude/settings.json`.
    Only the order of entries and the newer shared rules should differ.
