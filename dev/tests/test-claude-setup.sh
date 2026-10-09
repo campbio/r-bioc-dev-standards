@@ -81,7 +81,11 @@ make -s claude-setup > /dev/null 2>&1
 name="refuses when CLAUDECODE is set"
 cp "$out" "$work/before.json"
 echo '{}' > "$out"
-if ! CLAUDECODE=1 make -s claude-setup > /dev/null 2>&1 \
+# `!` in Claude Code runs commands in Claude's shell, so the message must
+# send the developer to a terminal outside it.
+msg="$(CLAUDECODE=1 make -s claude-setup 2>&1)"
+status=$?
+if [ $status -ne 0 ] && printf '%s' "$msg" | grep -q "outside Claude Code" \
    && [ "$(cat "$out")" = "{}" ]; then ok "$name"; else fail "$name"; fi
 cp "$work/before.json" "$out"
 
@@ -106,6 +110,11 @@ echo '{"permissions": {"allow": ["Bash(ls)"]}}' > .claude/settings.local.json
 cp .claude/settings.local.json "$work/local.json"
 make -s claude-setup > /dev/null 2>&1
 check cmp -s .claude/settings.local.json "$work/local.json"
+
+# 9a. No Write(path) rules: Claude Code warns about each at startup, and
+# Edit(path) rules already cover every file-editing tool.
+name="shared settings have no Write() rules"
+check jq -e '[.permissions[][] | select(startswith("Write("))] | length == 0' "$base"
 
 # 9. Listed by make help.
 name="make help lists claude-setup"

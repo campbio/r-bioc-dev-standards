@@ -13,8 +13,9 @@ as described under "What you need on your machine" in the README.
 ## Once per clone
 
 In each new clone of a package that has adopted the standards, run
-`make claude-setup` before starting `claude`, then approve the hooks when
-asked. Run it again after pulling a change to `dev/claude-settings.json`.
+`make claude-setup` in a terminal before starting `claude`. It refuses to
+run inside Claude Code, including with `!`. Run it again after pulling a
+change to `dev/claude-settings.json`.
 
 ## Once per package
 
@@ -170,9 +171,10 @@ asked. Run it again after pulling a change to `dev/claude-settings.json`.
       restrict Actions; check **Settings → Actions → General → Workflow
       permissions**.
 
-8. **Verify.** Start a new `claude` session in the package and approve the
-   changed hooks when asked. If Claude says the standards weren't loaded,
-   `.claude/settings.json` is missing; run `make claude-setup`. Then ask:
+8. **Verify.** Start a new `claude` session in the package, accepting the
+   folder-trust prompt if it appears. If Claude says the standards weren't
+   loaded, `.claude/settings.json` is missing; run `make claude-setup`.
+   Then ask:
    "Which remote do the standards say never to push to, and when may a
    pull request be opened?" Claude should
    answer from the standards without reading any files: never push to

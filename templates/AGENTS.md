@@ -12,7 +12,8 @@ starting, and follow it; those agents also aren't bound by
 In Claude Code, if the standards aren't in your context at session start,
 this clone has no `.claude/settings.json`, so neither the standards nor
 the permission guardrails are active: stop, and ask the developer to run
-`make claude-setup` and restart `claude`.
+`make claude-setup` in a terminal outside Claude Code (not with `!`, which
+runs inside it and is refused), then restart `claude`.
 
 ## About
 

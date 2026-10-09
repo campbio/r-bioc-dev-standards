@@ -115,7 +115,8 @@ _cs_merge = for (k in c("allow", "ask", "deny")) s[["permissions"]][[k]] <- uniq
 
 claude-setup:  ## Write .claude/settings.json (people only; once per clone)
 	@if [ -n "$$CLAUDECODE" ]; then \
-	  echo "make claude-setup is for people only: it writes Claude's own permissions."; exit 1; \
+	  echo "make claude-setup is for people only: it writes Claude's own permissions."; \
+	  echo "Run it in a terminal outside Claude Code (not with !, which runs inside it)."; exit 1; \
 	fi
 	@if git ls-files --error-unmatch .claude/settings.json > /dev/null 2>&1; then \
 	  echo "This package still commits .claude/settings.json, and make claude-setup would drop its own rules."; \
@@ -136,4 +137,4 @@ claude-setup:  ## Write .claude/settings.json (people only; once per clone)
 	@mkdir -p .claude
 	@BASE="$(CLAUDE_BASE_JSON)" ADD=dev/claude-settings.json OUT=.claude/settings.json \
 	  Rscript -e '$(_cs_read); $(_cs_check); $(_cs_merge)'
-	@echo "Wrote .claude/settings.json. Restart claude in this folder and approve the hooks when asked."
+	@echo "Wrote .claude/settings.json. Start (or restart) claude in this folder for it to take effect."

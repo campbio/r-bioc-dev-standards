@@ -50,8 +50,9 @@ longer needs an allow-list edit in every package.
 4. Tells the user to restart `claude` and approve the hooks.
 5. **Refuses to run when `CLAUDECODE` is set** (Claude mustn't regenerate
    its own guardrails). The check is in the recipe, the same idea as
-   `PEOPLE_ONLY`. It is not in the allow list. Claude can suggest
-   `! make claude-setup`.
+   `PEOPLE_ONLY`. It is not in the allow list. (Correction after testing:
+   `! make claude-setup` runs in Claude's shell, where `CLAUDECODE` is set,
+   so it is refused; the developer runs it in a separate terminal.)
 - Add it to `.PHONY` and give it a `##` help line.
 
 **Base settings changes** (`shared/claude-settings.json`)
