@@ -109,11 +109,13 @@ asked. Run it again after pulling a change to `dev/claude-settings.json`.
 
    ```
    .worktrees/
-   .claude/
+   .claude
    ```
 
    `.claude/` holds the settings `make claude-setup` writes and each
-   developer's own `settings.local.json`; neither is committed.
+   developer's own `settings.local.json`; neither is committed. Write
+   `.claude` without a trailing slash: when the `gert` package isn't
+   installed, BiocCheck reads `.gitignore` itself and misses `.claude/`.
 
    Copy `templates/.worktreeinclude` to the package root, so worktrees
    that Claude Code creates get a copy of the generated settings.
@@ -221,8 +223,8 @@ error. Move them over once, on a branch:
    repo, and copy into the new file only the entries the shared one
    lacks, such as the package's `git fetch` remotes, extra make targets,
    or people-only denies.
-2. Replace `.claude/settings.local.json` in `.gitignore` with `.claude/`,
-   then stop tracking the folder without deleting your copy:
+2. Replace `.claude/settings.local.json` in `.gitignore` with `.claude`
+   (no trailing slash; see step 5 above), then stop tracking the folder without deleting your copy:
    `git rm -r --cached .claude`
 3. Run `make claude-setup` and compare the result with the old file:
    `git show HEAD:.claude/settings.json | diff - .claude/settings.json`.
