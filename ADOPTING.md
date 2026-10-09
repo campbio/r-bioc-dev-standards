@@ -63,11 +63,12 @@ asked. Run it again after pulling a change to `dev/claude-settings.json`.
    the standard targets. Where a standard target needs to behave
    differently, use a setting above the include (see the comments in
    `shared/standards.mk`), and ask for a new setting here if none fits.
-   Then run `make claude-setup` (step 2). Recipe lines must start with a tab. List the extra targets in AGENTS.md
+   Recipe lines must start with a tab. List the extra targets in AGENTS.md
    (step 4). For any that are for people only, set `PEOPLE_ONLY` in the
    Makefile's settings (e.g. `PEOPLE_ONLY := clean site-deploy`), which
    makes them refuse to run from Claude Code, and also add them to the
-   deny list in `dev/claude-settings.json`, e.g. `Bash(make clean)`.
+   deny list in `dev/claude-settings.json`, e.g. `Bash(make clean)`. Then
+   run `make claude-setup` (step 2).
    `site-check` fails unless `_pkgdown.yml` sets `url:` and the site URL
    appears in DESCRIPTION's `URL` field. In a package with no pkgdown site
    it doesn't apply; say so in AGENTS.md.
