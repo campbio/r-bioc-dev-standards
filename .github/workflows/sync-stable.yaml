@@ -35,8 +35,10 @@ jobs:
         id: bioc
         run: |
           set -euo pipefail
-          rel=$(curl -fsSL https://bioconductor.org/config.yaml \
-            | awk -F'"' '/^release_version:/ {print $2; exit}')
+          # Download first, then parse: piping curl into an awk that exits
+          # early makes curl fail (exit 23) under pipefail.
+          cfg=$(curl -fsSL https://bioconductor.org/config.yaml)
+          rel=$(awk -F'"' '/^release_version:/ {print $2; exit}' <<< "$cfg")
           if [ -z "$rel" ]; then
             echo "::error::Could not read release_version from config.yaml"
             exit 1
@@ -61,7 +63,8 @@ jobs:
             exit 0
           fi
           rel_sha=$(git rev-parse "origin/$RELEASE_BRANCH")
-          version=$(git show "$rel_sha:DESCRIPTION" | awk -F': *' '/^Version:/ {print $2; exit}')
+          desc=$(git show "$rel_sha:DESCRIPTION")
+          version=$(awk -F': *' '/^Version:/ {print $2; exit}' <<< "$desc")
 
           # 1. Make the stable branch match the release branch.
           if git rev-parse --verify --quiet "origin/$STABLE_BRANCH" > /dev/null; then
@@ -97,16 +100,18 @@ jobs:
           # version, up to the next heading of the same or higher level
           # (subsections are kept). The release branch's NEWS.md is checked
           # first, then devel's, since a release branch cut before NEWS was
-          # updated may lack the section.
+          # updated may lack the section. A missing NEWS.md yields no notes.
           news_section() {
-            git show "$1:NEWS.md" 2> /dev/null | awk -v v="$version" '
+            local news
+            news=$(git show "$1:NEWS.md" 2> /dev/null) || return 0
+            awk -v v="$version" '
               BEGIN { gsub(/[.]/, "[.]", v); pat = "(^|[^0-9.])" v "([^0-9]|$)" }
               /^#/ {
                 match($0, /^#+/)
                 if (lvl) { if (RLENGTH <= lvl) exit }
                 else if ($0 ~ pat) lvl = RLENGTH
               }
-              lvl'
+              lvl' <<< "$news"
           }
           news_section "$rel_sha" > notes.md
           if [ ! -s notes.md ]; then
