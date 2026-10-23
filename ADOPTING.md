@@ -70,7 +70,9 @@ change to `dev/claude-settings.json`.
    (step 4). For any that are for people only, set `PEOPLE_ONLY` in the
    Makefile's settings (e.g. `PEOPLE_ONLY := clean site-deploy`), which
    makes them refuse to run from Claude Code, and also add them to the
-   deny list in `dev/claude-settings.json`, e.g. `Bash(make clean)`. Then
+   deny list in `dev/claude-settings.json`, e.g. `Bash(make clean)`. Both
+   are courtesy guards rather than security boundaries (see "Commands" in
+   README.md), so keep anything risky behind a person. Then
    run `make claude-setup` (step 2).
    `site-check` fails unless `_pkgdown.yml` sets `url:` and the site URL
    appears in DESCRIPTION's `URL` field. In a package with no pkgdown site

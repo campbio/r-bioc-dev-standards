@@ -170,6 +170,8 @@ Audience: R novices who copy code verbatim. The code must run as pasted.
   `Makefile`, `dev/hooks/`, `.lintr`, the downloaded copies in
   `~/.cache/r-bioc-dev-standards/`, or this file, or run
   `make claude-setup`. Propose changes instead.
+- Never work around a guard: don't unset `CLAUDECODE` or wrap a command to
+  dodge a permission rule. Ask the developer.
 - Never delete files or branches, run `git clean`, or force-push. Ask the
   developer.
 - No secrets, tokens, or absolute local paths in commits.

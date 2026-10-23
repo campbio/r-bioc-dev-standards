@@ -14,6 +14,11 @@
 
 FORCE_SUGGESTS ?= TRUE
 
+# Downloads must come over HTTPS (or from a local checkout, for testing).
+ifeq ($(filter https://% file://%,$(R_BIOC_STANDARDS_BASE)),)
+  $(error R_BIOC_STANDARDS_BASE must start with https:// (or file:// for a local checkout))
+endif
+
 .DEFAULT_GOAL := help
 
 # The package settings allow-list `make test-one` with any arguments, so

@@ -56,6 +56,22 @@ gives a chance to test a change first (see "Changing these standards").
 Because packages download and run scripts and make recipes from this repo,
 `main` is protected and changes arrive by pull request.
 
+**Trusting the `v1` tag.** Whatever `v1` points to runs on every
+developer's machine (make recipes and the lint hook), enters Claude's
+context (`standards.md`), and runs in each package's CI with write access
+to the repo (`sync-stable`). So `v1` is protected like `main`: a tag
+ruleset (`v-tags`) blocks updating or deleting `v*` tags, and moving `v1`
+means turning the ruleset off for a moment (see "Changing these
+standards"), which GitHub records in the audit log. Downloads must use
+`https://` (or `file://`, for testing a local checkout); the Makefile and
+the startup hook refuse anything else. A package that wants to review each
+change before it runs can pin a commit instead of the tag: set
+`R_BIOC_STANDARDS_REF` to the SHA in the Makefile and the environment, and
+replace `@v1` with `@<sha>` in its workflows. It then updates the pin by
+hand, and Dependabot (`package-ecosystem: github-actions`) can propose the
+workflow bumps. Checksums published alongside the files wouldn't help,
+since whoever can move the tag could update them too.
+
 Each package's own `AGENTS.md` adds what's specific to that package: its
 structure, slow tests, related packages, and any exceptions to these
 standards. When the two disagree, the package's "Overrides" section wins,
@@ -380,7 +396,13 @@ there, and anything that deletes files should stay a target for people
 only. Add safe extra targets to the allow list in `dev/claude-settings.json` so
 Claude isn't prompted for them, and add people-only targets to its deny
 list (for example `Bash(make clean)`), so the rule is enforced rather than
-only written down.
+only written down. Also list them in `PEOPLE_ONLY` in the package Makefile,
+which makes them refuse to run when `CLAUDECODE` is set, as it is in
+Claude Code's shell. Both are courtesy guards, not security boundaries:
+deny rules match command prefixes, and unsetting `CLAUDECODE` gets past the
+Makefile check. What stops Claude is the permission prompt for any
+command that isn't allow-listed, and the standards' rule against working
+around a guard.
 
 `make test-one` is allow-listed with any arguments, since the filter
 changes every time. Permission rules can't constrain arguments reliably, so
@@ -629,6 +651,8 @@ release also includes the following:
   `.lintr`, the downloaded copies in `~/.cache/r-bioc-dev-standards/`, or
   these standards, and it doesn't run `make claude-setup`. It proposes
   changes instead, so rules can't be loosened by the agent they constrain.
+  Nor does it work around a guard, for example by unsetting `CLAUDECODE`
+  or wrapping a command in `bash -c` to avoid a permission rule.
 - **Destructive commands:** Claude never deletes files or branches, runs
   `git clean`, or force-pushes. Anything destructive is done by a person.
 - **Secrets:** never commit tokens, passwords, or paths specific to your
@@ -649,8 +673,18 @@ release also includes the following:
    read the same setting:
    `R_BIOC_STANDARDS_REF=<branch> claude`
 3. Merge the PR. Nothing reaches packages yet.
-4. Publish it by moving the `v1` tag to the merge commit:
-   `git tag -f v1 <commit>` then `git push -f origin refs/tags/v1`.
+4. Publish it by moving the `v1` tag to the merge commit. The `v-tags`
+   ruleset blocks this, so turn it off, move the tag, and turn it back on:
+   ```sh
+   id=$(gh api repos/campbio/r-bioc-dev-standards/rulesets \
+     --jq '.[] | select(.name == "v-tags") | .id')
+   gh api -X PUT repos/campbio/r-bioc-dev-standards/rulesets/$id \
+     -f enforcement=disabled
+   git tag -f v1 <commit> && git push -f origin refs/tags/v1
+   gh api -X PUT repos/campbio/r-bioc-dev-standards/rulesets/$id \
+     -f enforcement=active
+   ```
+   Only move `v1` to a commit on `main`, which has been through a PR.
    Every package picks up the change at its next session start. GitHub's
    file cache can delay this by a few minutes.
 5. A change that would break existing packages, such as renaming a make

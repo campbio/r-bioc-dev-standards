@@ -22,6 +22,8 @@ PEOPLE_ONLY :=
 # - test-one and article must be the only target;
 # - PEOPLE_ONLY targets refuse to run from Claude Code, which sets
 #   CLAUDECODE in its shell (settings deny rules match only exact commands).
+#   This is a courtesy guard, not a security boundary: unsetting CLAUDECODE
+#   gets around it. The permission prompt is what stops Claude.
 _ok_chars := a b c d e f g h i j k l m n o p q r s t u v w x y z \
   A B C D E F G H I J K L M N O P Q R S T U V W X Y Z 0 1 2 3 4 5 6 7 8 9 . _ -
 _strip_ok = $(if $(2),$(call _strip_ok,$(subst $(firstword $(2)),,$(1)),$(wordlist 2,$(words $(2)),$(2))),$(1))
@@ -52,6 +54,9 @@ endif
 
 R_BIOC_STANDARDS_REF ?= v1
 R_BIOC_STANDARDS_BASE ?= https://raw.githubusercontent.com/campbio/r-bioc-dev-standards/$(R_BIOC_STANDARDS_REF)
+ifeq ($(filter https://% file://%,$(R_BIOC_STANDARDS_BASE)),)
+  $(error R_BIOC_STANDARDS_BASE must start with https:// (or file:// for a local checkout))
+endif
 STANDARDS_MK := $(or $(XDG_CACHE_HOME),$(HOME)/.cache)/r-bioc-dev-standards/$(R_BIOC_STANDARDS_REF)/standards.mk
 
 include $(STANDARDS_MK)
