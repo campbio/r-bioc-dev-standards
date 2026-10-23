@@ -60,9 +60,9 @@ Because packages download and run scripts and make recipes from this repo,
 developer's machine (make recipes and the lint hook), enters Claude's
 context (`standards.md`), and runs in each package's CI with write access
 to the repo (`sync-stable`). So `v1` is protected like `main`: a tag
-ruleset (`v-tags`) blocks updating or deleting `v*` tags, and moving `v1`
-means turning the ruleset off for a moment (see "Changing these
-standards"), which GitHub records in the audit log. Downloads must use
+ruleset (`v-tags`) blocks updating or deleting `v*` tags for everyone but
+repository admins, who are its only bypass actors. Keep the admin role to
+the maintainer, with two-factor authentication on. Downloads must use
 `https://` (or `file://`, for testing a local checkout); the Makefile and
 the startup hook refuse anything else. A package that wants to review each
 change before it runs can pin a commit instead of the tag: set
@@ -673,18 +673,11 @@ release also includes the following:
    read the same setting:
    `R_BIOC_STANDARDS_REF=<branch> claude`
 3. Merge the PR. Nothing reaches packages yet.
-4. Publish it by moving the `v1` tag to the merge commit. The `v-tags`
-   ruleset blocks this, so turn it off, move the tag, and turn it back on:
-   ```sh
-   id=$(gh api repos/campbio/r-bioc-dev-standards/rulesets \
-     --jq '.[] | select(.name == "v-tags") | .id')
-   gh api -X PUT repos/campbio/r-bioc-dev-standards/rulesets/$id \
-     -f enforcement=disabled
-   git tag -f v1 <commit> && git push -f origin refs/tags/v1
-   gh api -X PUT repos/campbio/r-bioc-dev-standards/rulesets/$id \
-     -f enforcement=active
-   ```
-   Only move `v1` to a commit on `main`, which has been through a PR.
+4. Publish it by moving the `v1` tag to the merge commit:
+   `git tag -f v1 <commit>` then `git push -f origin refs/tags/v1`.
+   Only a repository admin can do this (the `v-tags` ruleset blocks
+   everyone else), and only to a commit on `main`, which has been through
+   a PR.
    Every package picks up the change at its next session start. GitHub's
    file cache can delay this by a few minutes.
 5. A change that would break existing packages, such as renaming a make
