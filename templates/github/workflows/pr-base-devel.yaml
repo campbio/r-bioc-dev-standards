@@ -8,6 +8,9 @@ on:
   pull_request:
     branches: [main, master]
 
+# The shared workflow needs no access to this repo.
+permissions: {}
+
 jobs:
   wrong-base:
     uses: campbio/r-bioc-dev-standards/.github/workflows/pr-base-devel.yaml@v1

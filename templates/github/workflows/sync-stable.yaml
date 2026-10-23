@@ -2,6 +2,9 @@
 # branch, and tags each release version. The logic lives in
 # r-bioc-dev-standards, so fixes arrive without editing this file.
 # Set stable-branch to this repo's stable branch: main or master.
+# It runs whatever the v1 tag points to, with write access to this repo; to
+# review each change first, pin @v1 to a commit SHA (see README.md,
+# "Trusting the v1 tag", in r-bioc-dev-standards).
 
 name: Sync stable branch
 

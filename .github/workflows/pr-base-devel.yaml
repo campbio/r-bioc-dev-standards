@@ -12,6 +12,8 @@ on:
 jobs:
   wrong-base:
     runs-on: ubuntu-latest
+    # It only prints an error, so its token gets no permissions.
+    permissions: {}
     steps:
       - run: |
           echo "::error::Pull requests must target devel (or a RELEASE_X_Y branch for release fixes)."

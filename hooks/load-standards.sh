@@ -47,14 +47,24 @@ fetch() {
 }
 
 # The three downloads run in parallel, so a slow network costs one timeout,
-# not three.
-fetch standards.md standards.md & p1=$!
-fetch shared/lint-changed.sh lint-changed.sh & p2=$!
-fetch shared/standards.mk standards.mk & p3=$!
+# not three. Only HTTPS (or a local checkout, for testing) is trusted.
 stale=0
-for p in "$p1" "$p2" "$p3"; do
-  wait "$p" || stale=1
-done
+case "$base" in
+  https://* | file://*)
+    fetch standards.md standards.md & p1=$!
+    fetch shared/lint-changed.sh lint-changed.sh & p2=$!
+    fetch shared/standards.mk standards.mk & p3=$!
+    for p in "$p1" "$p2" "$p3"; do
+      wait "$p" || stale=1
+    done
+    ;;
+  *)
+    echo "WARNING: R_BIOC_STANDARDS_BASE must start with https:// (or file://),"
+    echo "so nothing was downloaded. Tell the user."
+    echo
+    stale=1
+    ;;
+esac
 
 if [ -s "$cache_dir/standards.md" ]; then
   if [ "$stale" -eq 1 ]; then
