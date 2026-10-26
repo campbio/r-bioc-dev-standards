@@ -152,9 +152,10 @@ change to `dev/claude-settings.json`.
       using the release named in <https://bioconductor.org/config.yaml>.
 
    c. Add the same four files to that release branch, so pushes to it
-      trigger the sync and merged release fixes close their issues (a
-      `pull_request_target` workflow runs from the PR's base branch):
-      check out `RELEASE_X_Y`, cherry-pick the commit from step a, and push
+      trigger the sync, and the sync copies them to the stable branch.
+      `close-fixed-issues.yaml` only runs from there: GitHub always reads a
+      `pull_request_target` workflow from the default branch. Check out
+      `RELEASE_X_Y`, cherry-pick the commit from step a, and push
       to `<shared>`. That push runs the sync for the first time. It brings
       the stable branch up to date, keeping its old history, and tags the
       current release version if it isn't tagged yet. You don't
@@ -222,8 +223,9 @@ A package still needs its own edit when:
 - a new shared workflow needs a caller: packages adopted before
   `close-fixed-issues.yaml` existed copy
   `templates/github/workflows/close-fixed-issues.yaml` to
-  `.github/workflows/` once, by PR into `devel` and the current release
-  branch;
+  `.github/workflows/` once, in `devel` by PR and on the current release
+  branch as in step 7c. It starts working when the sync copies it to the
+  stable branch, since GitHub reads it from the default branch;
 - a breaking change is published as `v2` (the package moves when ready).
 
 ## Migrating a package adopted before shared delivery

@@ -351,8 +351,11 @@ pushed to Bioconductor and built. Only `#N` references to the same repo
 count, and HTML comments in the description are ignored. PRs from forks
 are handled too: the Action runs with `pull_request_target`, which gives it
 a token that can write issues, and it is safe because it never checks out
-or runs the PR's code. PRs into a refactor branch don't close issues; the
-final PR into `devel` lists them all.
+or runs the PR's code. GitHub reads a `pull_request_target` workflow from
+the default branch, so the caller takes effect, and later changes to it
+apply, only once the sync copies it from the release branch. PRs into a
+refactor branch don't close issues; the final PR into `devel` lists them
+all.
 
 **Large refactors.** Some refactors are too big for one PR, but merging
 them into `devel` piece by piece would leave it half-converted. Bioconductor

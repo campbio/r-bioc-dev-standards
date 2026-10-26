@@ -84,10 +84,18 @@ jobs:
           esac
 
           failed=0
+          err=$(mktemp)
           for n in $nums; do
             if ! info=$(gh api "repos/$GH_REPO/issues/$n" \
-                --jq '[.state, (.pull_request != null)] | @tsv' 2> /dev/null); then
-              echo "::notice::#$n doesn't exist; skipped."
+                --jq '[.state, (.pull_request != null)] | @tsv' 2> "$err"); then
+              # Only a missing or deleted issue is skipped; any other error
+              # (rate limit, outage) fails the run.
+              if grep -qE 'HTTP (404|410)' "$err"; then
+                echo "::notice::#$n doesn't exist; skipped."
+              else
+                echo "::error::Could not look up #$n: $(cat "$err")"
+                failed=1
+              fi
               continue
             fi
             state=${info%%$'\t'*}
