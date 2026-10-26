@@ -1,0 +1,24 @@
+# When a pull request merges into devel or a release branch, comments on
+# and closes each issue its description fixes ("Fixes #N"). GitHub does this
+# itself only for merges into the default branch, the stable release copy.
+# The logic lives in r-bioc-dev-standards.
+# pull_request_target lets it comment on issues fixed by PRs from forks; the
+# shared workflow never checks out or runs the PR's code.
+# It runs whatever the v1 tag points to, with write access to this repo's
+# issues; to review each change first, pin @v1 to a commit SHA (see
+# README.md, "Trusting the v1 tag", in r-bioc-dev-standards).
+
+name: Close fixed issues
+
+on:
+  pull_request_target:
+    types: [closed]
+    branches: [devel, 'RELEASE_*']
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  close:
+    uses: campbio/r-bioc-dev-standards/.github/workflows/close-fixed-issues.yaml@v1

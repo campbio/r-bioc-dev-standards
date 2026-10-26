@@ -136,12 +136,12 @@ change to `dev/claude-settings.json`.
    automatic copy of the current Bioconductor release. See "Branches,
    releases, and tags" in the README for how it works.
 
-   a. Copy `templates/github/workflows/sync-stable.yaml` and
-      `pr-base-devel.yaml` to `.github/workflows/`, and
-      `templates/github/pull_request_template.md` to `.github/`. In
-      `sync-stable.yaml`, set `stable-branch` to `main` or `master` to match
-      the repo. Both workflows are short: they call the shared workflows in
-      this repo. Merge these into `devel` by PR.
+   a. Copy `templates/github/workflows/sync-stable.yaml`,
+      `pr-base-devel.yaml`, and `close-fixed-issues.yaml` to
+      `.github/workflows/`, and `templates/github/pull_request_template.md`
+      to `.github/`. In `sync-stable.yaml`, set `stable-branch` to `main` or
+      `master` to match the repo. All three workflows are short: they call
+      the shared workflows in this repo. Merge these into `devel` by PR.
 
    b. Make sure the current release branch is on GitHub. Fetch it from
       Bioconductor and push it to the shared GitHub repo, not a fork. Below,
@@ -151,11 +151,13 @@ change to `dev/claude-settings.json`.
       `git push <shared> bioc/RELEASE_X_Y:refs/heads/RELEASE_X_Y`,
       using the release named in <https://bioconductor.org/config.yaml>.
 
-   c. Add the same three files to that release branch, so pushes to it
-      trigger the sync: check out `RELEASE_X_Y`, cherry-pick the commit from
-      step a, and push to `<shared>`. That push runs the sync for the first
-      time. It brings the stable branch up to date, keeping its old history,
-      and tags the current release version if it isn't tagged yet. You don't
+   c. Add the same four files to that release branch, so pushes to it
+      trigger the sync and merged release fixes close their issues (a
+      `pull_request_target` workflow runs from the PR's base branch):
+      check out `RELEASE_X_Y`, cherry-pick the commit from step a, and push
+      to `<shared>`. That push runs the sync for the first time. It brings
+      the stable branch up to date, keeping its old history, and tags the
+      current release version if it isn't tagged yet. You don't
       need to push this commit to Bioconductor or bump the version, since
       `.github/` is excluded from the package build. Future release branches
       inherit the files from `devel` automatically.
@@ -217,6 +219,11 @@ A package still needs its own edit when:
 - a package-specific file changes: `dev/claude-settings.json`,
   `AGENTS.md`, `.lintr`, the PR template, `.Rbuildignore`, or
   `.gitignore`;
+- a new shared workflow needs a caller: packages adopted before
+  `close-fixed-issues.yaml` existed copy
+  `templates/github/workflows/close-fixed-issues.yaml` to
+  `.github/workflows/` once, by PR into `devel` and the current release
+  branch;
 - a breaking change is published as `v2` (the package moves when ready).
 
 ## Migrating a package adopted before shared delivery

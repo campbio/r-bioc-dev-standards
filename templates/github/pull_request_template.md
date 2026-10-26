@@ -4,7 +4,9 @@
 
 ## What changed and why
 
-<!-- Link the issue if there is one. -->
+<!-- Link the issue if there is one. Write "Fixes #" and the issue number
+     for each issue this PR fixes. When the PR merges into devel or a
+     release branch, a workflow comments on each issue and closes it. -->
 
 ## How it was tested
 

@@ -34,8 +34,9 @@ without editing each one. There are three ways a file gets to a package:
   then adds `standards.md` to Claude's context. If GitHub can't be
   reached, it uses the last downloaded copies and tells Claude they may be
   out of date.
-- **Called by GitHub.** The workflows that keep the stable branch current
-  and check PR base branches live in this repo's `.github/workflows/`.
+- **Called by GitHub.** The workflows that keep the stable branch current,
+  check PR base branches, and close fixed issues live in this repo's
+  `.github/workflows/`.
   Each package has short workflows that call them.
 - **Copied once, then edited per package.** Files that differ between
   packages (`dev/claude-settings.json`, `AGENTS.md`, `.lintr`, the PR
@@ -98,13 +99,14 @@ your fork, and adapt the rules to your project.
 | `shared/claude-settings.json` | Hook registration and permissions shared by every package; `make claude-setup` combines it with the package's own |
 | `.github/workflows/sync-stable.yaml` | Shared workflow: keeps `main`/`master` matching the current release, and tags releases |
 | `.github/workflows/pr-base-devel.yaml` | Shared workflow: fails PRs aimed at the stable branch |
+| `.github/workflows/close-fixed-issues.yaml` | Shared workflow: comments on and closes the issues a PR fixes when it merges into `devel` or a release branch |
 | `templates/dev/claude-settings.json` | Empty starting point for a package's own permission rules and hooks |
 | `templates/.worktreeinclude` | Makes Claude Code copy the generated settings into worktrees it creates |
 | `templates/Makefile` | A package Makefile: settings, the shared targets, and extra targets |
 | `templates/.lintr` | lintr settings: 80 columns, indentation set per package (4 spaces by default) |
 | `templates/dev/adr/` | Decision record (ADR) template and index |
 | `templates/AGENTS.md`, `templates/CLAUDE.md` | Starting points for package-specific notes |
-| `templates/github/workflows/*.yaml` | Short workflows that call the two shared workflows |
+| `templates/github/workflows/*.yaml` | Short workflows that call the three shared workflows |
 | `templates/github/pull_request_template.md` | PR template: base-branch reminder, checklist, ADR link, scientific-correctness and generated-content sections |
 
 ## What you need on your machine
@@ -334,6 +336,24 @@ it by hand, the next run undoes the change. That's why nobody should.
 it as the base for new PRs. The `pr-base-devel.yaml` check fails any PR aimed
 at it, with instructions to switch the base to `devel`.
 
+**Issues.** GitHub closes an issue named by "Fixes #N" in a PR only when
+the PR merges into the default branch. Here that's the stable branch, which
+only the sync Action updates, so fixed issues would stay open until someone
+closed them by hand. Instead, the `close-fixed-issues.yaml` Action runs
+when a PR merges into `devel` or a release branch. For each issue the PR's
+description names with a closing keyword (`fixes`, `closes`, or `resolves`,
+in any form, followed by `#N`), it adds a comment and closes the issue. A
+merge into `devel` says which devel version has the fix, that it reaches
+the release at the next Bioconductor release, and how to install the
+devel version from GitHub. A merge into a release branch says the fix is
+in the release version and reaches `BiocManager::install()` once it's
+pushed to Bioconductor and built. Only `#N` references to the same repo
+count, and HTML comments in the description are ignored. PRs from forks
+are handled too: the Action runs with `pull_request_target`, which gives it
+a token that can write issues, and it is safe because it never checks out
+or runs the PR's code. PRs into a refactor branch don't close issues; the
+final PR into `devel` lists them all.
+
 **Large refactors.** Some refactors are too big for one PR, but merging
 them into `devel` piece by piece would leave it half-converted. Bioconductor
 builds `devel` every night, so `devel` has to stay releasable. For these, a
@@ -358,7 +378,9 @@ builds `devel` every night, so `devel` has to stay releasable. For these, a
 5. When the refactor is complete, tested, and documented, review the whole
    branch: a fresh subagent checks the full diff against the ADR, then
    `/code-review`, `make check-full`, and `make bioccheck`. Then open one PR
-   from the refactor branch into `devel`. If it conflicts, a maintainer
+   from the refactor branch into `devel`, with `Fixes #N` for every issue
+   the pieces fixed, since PRs into the refactor branch don't close issues
+   (pieces say "Part of #N" instead). If it conflicts, a maintainer
    (never Claude) resolves it, in GitHub's conflict editor or by merging
    `devel` into the refactor branch locally; either way, that merge lands on
    the refactor branch. If both branches bumped the version, DESCRIPTION

@@ -1,0 +1,115 @@
+# Reusable workflow: when a pull request merges into devel or a release
+# branch, comments on and closes each issue its description fixes
+# ("Fixes #N"). GitHub does this itself only for merges into the default
+# branch, which in these packages is the stable copy of the current release.
+# Packages don't copy this file; they call it from a short workflow
+# (templates/github/workflows/close-fixed-issues.yaml), which sets the
+# trigger and grants `issues: write`. It never runs in this repo.
+#
+# - The caller uses pull_request_target, because a plain pull_request run
+#   from a fork gets a read-only token and couldn't comment. That is safe
+#   only because this job never checks out or runs the PR's code: it has no
+#   checkout and no actions, just the runner's gh.
+# - The PR description is untrusted text. It reaches the script only
+#   through an environment variable, never ${{ }}, and only all-digit issue
+#   numbers are taken from it.
+# - It acts only on merged PRs, so a maintainer has approved the
+#   description that names the issues.
+
+name: Close fixed issues
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  close:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_BODY: ${{ github.event.pull_request.body }}
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
+      MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+    steps:
+      - name: Comment on and close each fixed issue
+        run: |
+          set -euo pipefail
+
+          # Issue numbers after a closing keyword, as GitHub reads them:
+          # "Fixes #12", "closes: #12", any case. Same-repo #N only, so
+          # owner/repo#N and URLs don't match. HTML comments (such as the
+          # PR template's instructions) are removed first.
+          nums=$(printf '%s\n' "$PR_BODY" \
+            | perl -0pe 's/<!--.*?-->//gs' \
+            | grep -oiE '(^|[^[:alnum:]_])(close[sd]?|fix(e[sd])?|resolve[sd]?):?[[:space:]]+#[0-9]+' \
+            | grep -oE '[0-9]+$' | sed 's/^0*//' | grep -v '^$' | sort -un) || true
+          if [ -z "$nums" ]; then
+            echo "No 'Fixes #N' references in PR #$PR_NUMBER."
+            exit 0
+          fi
+
+          desc=$(gh api -H "Accept: application/vnd.github.raw" \
+            "repos/$GH_REPO/contents/DESCRIPTION?ref=$MERGE_SHA")
+          pkg=$(awk -F': *' '/^Package:/ {print $2; exit}' <<< "$desc" | tr -d '\r')
+          version=$(awk -F': *' '/^Version:/ {print $2; exit}' <<< "$desc" | tr -d '\r')
+          if [ -z "$pkg" ] || [ -z "$version" ]; then
+            echo "::error::Could not read Package and Version from DESCRIPTION."
+            exit 1
+          fi
+
+          case "$BASE_REF" in
+            devel)
+              msg="Fixed in the development version of $pkg ($version) by #$PR_NUMBER. The fix reaches the release version, and this repository's default branch, at the next Bioconductor release (April or October). To use it sooner, install the development version, which may need R-devel:
+
+          \`\`\`r
+          remotes::install_github(\"$GH_REPO@devel\")
+          \`\`\`"
+              ;;
+            RELEASE_*)
+              msg="Also fixed in the release version of $pkg ($version, $BASE_REF) by #$PR_NUMBER. \`BiocManager::install(\"$pkg\")\` gets the fix once the maintainer pushes it to Bioconductor and the build finishes, usually within a few days."
+              ;;
+            *)
+              echo "::notice::PRs into $BASE_REF don't close issues."
+              exit 0
+              ;;
+          esac
+
+          failed=0
+          for n in $nums; do
+            if ! info=$(gh api "repos/$GH_REPO/issues/$n" \
+                --jq '[.state, (.pull_request != null)] | @tsv' 2> /dev/null); then
+              echo "::notice::#$n doesn't exist; skipped."
+              continue
+            fi
+            state=${info%%$'\t'*}
+            is_pr=${info##*$'\t'}
+            if [ "$is_pr" = "true" ]; then
+              echo "::notice::#$n is a pull request, not an issue; skipped."
+              continue
+            fi
+            if ! gh issue comment "$n" --body "$msg"; then
+              echo "::error::Could not comment on #$n."
+              failed=1
+              continue
+            fi
+            if [ "$state" = "open" ]; then
+              if ! gh issue close "$n" --reason completed; then
+                echo "::error::Could not close #$n."
+                failed=1
+                continue
+              fi
+              echo "Commented on and closed #$n."
+            else
+              echo "Commented on #$n, which was already closed."
+            fi
+          done
+          exit "$failed"

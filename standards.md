@@ -39,9 +39,10 @@ On conflict, follow the higher level and say so.
 6. AFTER APPROVAL: push the branch and open a PR with base `devel`, or the
    refactor branch for refactor work (never the default branch). Fill in
    the PR template, but never its "Scientific correctness" section; a
-   person verifies that. Put follow-up fixes on the same branch; never open
-   a second PR. Merge only after CI is green and a person approves on
-   GitHub. No local merges. No history rewrites after a push.
+   person verifies that. Write `Fixes #N` for each issue the PR fixes. Put
+   follow-up fixes on the same branch; never open a second PR. Merge only
+   after CI is green and a person approves on GitHub. No local merges. No
+   history rewrites after a push.
 
 Specs go in `dev/plans/`, never `docs/`, including `docs/specs/`.
 
@@ -62,10 +63,11 @@ Specs go in `dev/plans/`, never `docs/`, including `docs/specs/`.
   included. Never merge `devel` into it. When the refactor is complete,
   tested, and documented, review the whole branch as in step 4 (checking
   against the ADR), pass `check-full` and `bioccheck`, and open one PR into
-  `devel`. Only a maintainer resolves that PR's conflicts, which merges
-  `devel` into the refactor branch; DESCRIPTION gets one past the higher
-  version. The maintainer merges the PR with a merge commit, never squash
-  or rebase.
+  `devel`, listing `Fixes #N` for every issue the pieces fixed (piece PRs
+  say "Part of #N"). Only a maintainer resolves that PR's conflicts,
+  which merges `devel` into the refactor branch; DESCRIPTION gets one past
+  the higher version. The maintainer merges the PR with a merge commit,
+  never squash or rebase.
 - `RELEASE_X_Y`: release fixes only. Mirrors the Bioconductor release branch.
 - `main`/`master` (stable, the GitHub default): a CI-maintained copy of the
   current release. Never commit to it, branch from it, push it, or open PRs
