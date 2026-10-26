@@ -1,4 +1,5 @@
-<!-- Base branch: devel. Use RELEASE_X_Y only for an approved release fix.
+<!-- Base branch: devel. Use RELEASE_X_Y only for an approved release fix,
+     and refactor/<topic> only for a piece of an approved refactor.
      Never target main/master, which is updated automatically. -->
 
 ## What changed and why
