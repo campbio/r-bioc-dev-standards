@@ -34,8 +34,9 @@ without editing each one. There are three ways a file gets to a package:
   then adds `standards.md` to Claude's context. If GitHub can't be
   reached, it uses the last downloaded copies and tells Claude they may be
   out of date.
-- **Called by GitHub.** The workflows that keep the stable branch current
-  and check PR base branches live in this repo's `.github/workflows/`.
+- **Called by GitHub.** The workflows that keep the stable branch current,
+  check PR base branches, and close fixed issues live in this repo's
+  `.github/workflows/`.
   Each package has short workflows that call them.
 - **Copied once, then edited per package.** Files that differ between
   packages (`dev/claude-settings.json`, `AGENTS.md`, `.lintr`, the PR
@@ -98,13 +99,14 @@ your fork, and adapt the rules to your project.
 | `shared/claude-settings.json` | Hook registration and permissions shared by every package; `make claude-setup` combines it with the package's own |
 | `.github/workflows/sync-stable.yaml` | Shared workflow: keeps `main`/`master` matching the current release, and tags releases |
 | `.github/workflows/pr-base-devel.yaml` | Shared workflow: fails PRs aimed at the stable branch |
+| `.github/workflows/close-fixed-issues.yaml` | Shared workflow: comments on and closes the issues a PR fixes when it merges into `devel` or a release branch |
 | `templates/dev/claude-settings.json` | Empty starting point for a package's own permission rules and hooks |
 | `templates/.worktreeinclude` | Makes Claude Code copy the generated settings into worktrees it creates |
 | `templates/Makefile` | A package Makefile: settings, the shared targets, and extra targets |
 | `templates/.lintr` | lintr settings: 80 columns, indentation set per package (4 spaces by default) |
 | `templates/dev/adr/` | Decision record (ADR) template and index |
 | `templates/AGENTS.md`, `templates/CLAUDE.md` | Starting points for package-specific notes |
-| `templates/github/workflows/*.yaml` | Short workflows that call the two shared workflows |
+| `templates/github/workflows/*.yaml` | Short workflows that call the three shared workflows |
 | `templates/github/pull_request_template.md` | PR template: base-branch reminder, checklist, ADR link, scientific-correctness and generated-content sections |
 
 ## What you need on your machine
@@ -206,10 +208,12 @@ takes minutes; correcting it after implementation takes hours.
 
 ### 3. Execute on a new branch
 
-Work never happens directly on `devel` or a release branch. First, fetch the
-latest `devel` from the shared GitHub repo. Starting from current code
-avoids merge conflicts later. Then create a branch named `fix/<topic>` or
-`feature/<topic>`.
+Work never happens directly on `devel`, a release branch, or a refactor
+branch. First, fetch the latest `devel` from the shared GitHub repo, or the
+refactor branch if the work is part of an open refactor (see "Large
+refactors" under "Branches, releases, and tags"). Starting from current
+code avoids merge conflicts later. Then create a branch from it named
+`fix/<topic>` or `feature/<topic>`.
 
 Claude builds from the approved spec and stays within it. Problems it
 notices elsewhere are logged as issues rather than fixed on the way, which
@@ -245,7 +249,9 @@ the work than the session that wrote it.
 ### 5. Hand off to the developer
 
 Claude stops before pushing anything. It summarizes the change, lists
-anything it couldn't verify, and shows the branch's commits and full diff.
+anything it couldn't verify, and shows the branch's commits and full diff,
+measured from `devel` or, for refactor work, from the shared repo's
+refactor branch as last fetched (`<remote>/refactor/<topic>`).
 It also says whether the change alters results: numbers, model output, or
 what a plot shows. You review the whole branch and either approve it or ask
 for changes, which become new or amended local commits.
@@ -262,10 +268,11 @@ output is scientifically correct, and says who checked and how in the PR.
 ### 6. Push and open a pull request
 
 Only after your approval does the branch get pushed, followed by a PR
-against `devel`. Note that GitHub suggests the default branch (`main` or
-`master`) as the base, so change it to `devel`; a check fails any PR aimed
-at the stable branch. The PR template asks what changed, why, and how it
-was tested, and has a checklist, a link to any ADR, and a note of which
+against `devel`, or against the refactor branch for a piece of a refactor.
+Note that GitHub suggests the default branch (`main` or `master`) as the
+base, so change it to `devel` or the refactor branch; a check fails any PR
+aimed at the stable branch. The PR template asks what changed, why, and how
+it was tested, and has a checklist, a link to any ADR, and a note of which
 parts an AI agent wrote, so reviewers know where to look hardest. Its
 "Scientific correctness" section is for a person only; Claude never fills
 it in.
@@ -299,13 +306,15 @@ build, so Claude never does it.
 
 ## Branches, releases, and tags
 
-Each package's GitHub repo has three kinds of branches:
+Each package's GitHub repo has three kinds of permanent branches, plus a
+temporary one for large refactors:
 
 | Branch | Contains | Updated by |
 |---|---|---|
-| `devel` | The development version. All work lands here by PR. | Merged PRs; mirrors Bioconductor devel |
+| `devel` | The development version. All work lands here by PR, directly or through a refactor branch. | Merged PRs; mirrors Bioconductor devel |
 | `RELEASE_X_Y` | A Bioconductor release, e.g. `RELEASE_3_23` | Bioconductor at release time; approved release fixes |
 | `main` or `master` | A copy of the current release | A GitHub Action, never by hand |
+| `refactor/<topic>` | A large refactor in progress, until it merges into `devel` | Merged PRs for each piece of the refactor |
 
 The stable branch (`main` or `master`) is the GitHub default. That way,
 visitors see the released version of the package on its GitHub page, and
@@ -326,6 +335,68 @@ it by hand, the next run undoes the change. That's why nobody should.
 **Pull requests.** Because the stable branch is the default, GitHub suggests
 it as the base for new PRs. The `pr-base-devel.yaml` check fails any PR aimed
 at it, with instructions to switch the base to `devel`.
+
+**Issues.** GitHub closes an issue named by "Fixes #N" in a PR only when
+the PR merges into the default branch. Here that's the stable branch, which
+only the sync Action updates, so fixed issues would stay open until someone
+closed them by hand. Instead, the `close-fixed-issues.yaml` Action runs
+when a PR merges into `devel` or a release branch. For each issue the PR's
+description names with a closing keyword (`fixes`, `closes`, or `resolves`,
+in any form, followed by `#N`), it adds a comment and closes the issue. A
+merge into `devel` says which devel version has the fix, that it reaches
+the release at the next Bioconductor release, and how to install the
+devel version from GitHub. A merge into a release branch says the fix is
+in the release version and reaches `BiocManager::install()` once it's
+pushed to Bioconductor and built. Only `#N` references to the same repo
+count, and HTML comments in the description are ignored. PRs from forks
+are handled too: the Action runs with `pull_request_target`, which gives it
+a token that can write issues, and it is safe because it never checks out
+or runs the PR's code. GitHub reads a `pull_request_target` workflow from
+the default branch, so the caller takes effect, and later changes to it
+apply, only once the sync copies it from the release branch. PRs into a
+refactor branch don't close issues; the final PR into `devel` lists them
+all.
+
+**Large refactors.** Some refactors are too big for one PR, but merging
+them into `devel` piece by piece would leave it half-converted. Bioconductor
+builds `devel` every night, so `devel` has to stay releasable. For these, a
+`refactor/<topic>` branch serves as a temporary base:
+
+1. Propose the refactor in an issue and write its ADR, naming the
+   `refactor/<topic>` branch. The ADR merges into `devel` by an ordinary
+   PR, so the decision is on record even if the refactor is dropped.
+2. A maintainer creates `refactor/<topic>` from current `devel` and pushes
+   it to the shared repo. Claude never creates, pushes, or commits directly
+   to a refactor branch.
+3. Each piece is an ordinary `fix/<topic>` or `feature/<topic>` branch made
+   from the refactor branch, with its PR based on the refactor branch. All
+   six steps of the development process apply, and so does the full PR
+   checklist, version bump included. (The pieces can't be named
+   `refactor/<topic>/<part>`: git can't have a branch and a folder of
+   branches with the same name.)
+4. `devel` is not merged into the refactor branch while it's open. That
+   keeps the process simple, so keep other changes to `devel` to a minimum
+   until the refactor lands. The one exception is the final PR's conflicts,
+   below.
+5. When the refactor is complete, tested, and documented, review the whole
+   branch: a fresh subagent checks the full diff against the ADR, then
+   `/code-review`, `make check-full`, and `make bioccheck`. Then open one PR
+   from the refactor branch into `devel`, with `Fixes #N` for every issue
+   the pieces fixed, since PRs into the refactor branch don't close issues
+   (pieces say "Part of #N" instead). If it conflicts, a maintainer
+   (never Claude) resolves it, in GitHub's conflict editor or by merging
+   `devel` into the refactor branch locally; either way, that merge lands on
+   the refactor branch. If both branches bumped the version, DESCRIPTION
+   gets one past the higher of the two. A person approves the PR on GitHub,
+   and it's merged with a merge commit, never squashed or rebased, so the
+   reviewed pieces stay in `devel`'s history and `git bisect` can still find
+   which one broke something.
+6. A maintainer then deletes the refactor branch. If a refactor is
+   abandoned, the maintainer deletes the branch, and a new ADR supersedes
+   the old one.
+
+To get CI on the pieces, the package's check workflow has to run on PRs to
+`refactor/**` as well as `devel` (see ADOPTING.md).
 
 **Tags and GitHub Releases.** Bioconductor doesn't use git tags; it goes by
 the version in DESCRIPTION. On GitHub, the same Action tags each version

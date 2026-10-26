@@ -25,7 +25,8 @@ is it like this?"
 2. Draft the ADR from `template.md` with status **Proposed**.
 3. The maintainer approves it; the status becomes **Accepted** and the ADR
    gets the next number.
-4. Implement.
+4. Implement. A large refactor that can't land in `devel` in one PR is
+   built on a `refactor/<topic>` branch; its ADR names that branch.
 
 ADRs are append-only. An accepted ADR is never edited or deleted. A later
 ADR supersedes it, the old one's status changes to **Superseded by NNNN**,

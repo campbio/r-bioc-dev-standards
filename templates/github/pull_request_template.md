@@ -1,9 +1,12 @@
-<!-- Base branch: devel. Use RELEASE_X_Y only for an approved release fix.
+<!-- Base branch: devel. Use RELEASE_X_Y only for an approved release fix,
+     and refactor/<topic> only for a piece of an approved refactor.
      Never target main/master, which is updated automatically. -->
 
 ## What changed and why
 
-<!-- Link the issue if there is one. -->
+<!-- Link the issue if there is one. Write "Fixes #" and the issue number
+     for each issue this PR fixes. When the PR merges into devel or a
+     release branch, a workflow comments on each issue and closes it. -->
 
 ## How it was tested
 

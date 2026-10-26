@@ -1,4 +1,4 @@
-# R/Bioconductor Package Development Standards v1.1
+# R/Bioconductor Package Development Standards v1.2
 
 Rules for developing R packages distributed through Bioconductor. Loaded
 at session start by a hook in each package. Rationale for each rule:
@@ -20,25 +20,29 @@ On conflict, follow the higher level and say so.
    release port. Small change: in chat. Larger or unsure: a file in
    `dev/plans/`, committed after branching. A brainstorming design is the
    spec. No step-by-step implementation plan. Wait for approval.
-3. EXECUTE: fetch the shared repo's `devel`, then branch as `fix/<topic>` or
-   `feature/<topic>` before writing code. Never work on `devel` or
-   `RELEASE_*`. Implement from the spec and stay within it. Test first with
-   testthat: each new test must fail on its assertion, not on a missing
-   function. Never weaken, skip, or delete a test to make it pass; if one
-   looks wrong, ask. Make small local commits that say what and why.
+3. EXECUTE: fetch the shared repo's `devel` (or `refactor/<topic>`, for
+   work that is part of an open refactor), then branch from it as
+   `fix/<topic>` or `feature/<topic>` before writing code. Never work on
+   `devel`, `RELEASE_*`, or `refactor/*`. Implement from the spec and stay
+   within it. Test first with testthat: each new test must fail on its
+   assertion, not on a missing function. Never weaken, skip, or delete a
+   test to make it pass; if one looks wrong, ask. Make small local commits
+   that say what and why.
 4. REVIEW: give a fresh subagent the spec to check the diff against, then
    run `/code-review` on the branch. Fix findings, or say why one doesn't
    apply.
 5. HAND OFF: stop before anything leaves the machine. Give a summary, list
    anything unverified, say whether results, numbers, or plots change, and
-   show `git log devel..HEAD` and `git diff devel...HEAD`. No push, PR, or
-   merge until the developer approves.
-6. AFTER APPROVAL: push the branch and open a PR with base `devel` (not the
-   default branch). Fill in the PR template, but never its "Scientific
-   correctness" section; a person verifies that. Put follow-up fixes on the
-   same branch; never open a second PR. Merge only after CI is green and a
-   person approves on GitHub. No local merges. No history rewrites after a
-   push.
+   show `git log devel..HEAD` and `git diff devel...HEAD` (for refactor
+   work, the fetched `<remote>/refactor/<topic>` in place of `devel`). No
+   push, PR, or merge until the developer approves.
+6. AFTER APPROVAL: push the branch and open a PR with base `devel`, or the
+   refactor branch for refactor work (never the default branch). Fill in
+   the PR template, but never its "Scientific correctness" section; a
+   person verifies that. Write `Fixes #N` for each issue the PR fixes. Put
+   follow-up fixes on the same branch; never open a second PR. Merge only
+   after CI is green and a person approves on GitHub. No local merges. No
+   history rewrites after a push.
 
 Specs go in `dev/plans/`, never `docs/`, including `docs/specs/`.
 
@@ -50,7 +54,20 @@ Specs go in `dev/plans/`, never `docs/`, including `docs/specs/`.
 
 ## Branches and tags
 - `devel`: all development. The PR base for everything except release
-  fixes. Mirrors Bioconductor devel.
+  fixes and refactor pieces. Mirrors Bioconductor devel.
+- `refactor/<topic>`: a temporary base for a large refactor, so `devel`
+  stays releasable until all of it lands. A maintainer creates it from
+  `devel` after the refactor's ADR is accepted; never create, push, or
+  commit directly to one. Each piece is a `fix/` or `feature/` branch from
+  it, with its PR based on it and the full PR checklist, version bump
+  included. Never merge `devel` into it. When the refactor is complete,
+  tested, and documented, review the whole branch as in step 4 (checking
+  against the ADR), pass `check-full` and `bioccheck`, and open one PR into
+  `devel`, listing `Fixes #N` for every issue the pieces fixed (piece PRs
+  say "Part of #N"). Only a maintainer resolves that PR's conflicts,
+  which merges `devel` into the refactor branch; DESCRIPTION gets one past
+  the higher version. The maintainer merges the PR with a merge commit,
+  never squash or rebase.
 - `RELEASE_X_Y`: release fixes only. Mirrors the Bioconductor release branch.
 - `main`/`master` (stable, the GitHub default): a CI-maintained copy of the
   current release. Never commit to it, branch from it, push it, or open PRs
