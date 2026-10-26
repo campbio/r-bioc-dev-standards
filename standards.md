@@ -33,9 +33,9 @@ On conflict, follow the higher level and say so.
    apply.
 5. HAND OFF: stop before anything leaves the machine. Give a summary, list
    anything unverified, say whether results, numbers, or plots change, and
-   show `git log devel..HEAD` and `git diff devel...HEAD` (with the refactor
-   branch in place of `devel`, for refactor work). No push, PR, or merge
-   until the developer approves.
+   show `git log devel..HEAD` and `git diff devel...HEAD` (for refactor
+   work, the fetched `<remote>/refactor/<topic>` in place of `devel`). No
+   push, PR, or merge until the developer approves.
 6. AFTER APPROVAL: push the branch and open a PR with base `devel`, or the
    refactor branch for refactor work (never the default branch). Fill in
    the PR template, but never its "Scientific correctness" section; a
@@ -62,8 +62,10 @@ Specs go in `dev/plans/`, never `docs/`, including `docs/specs/`.
   included. Never merge `devel` into it. When the refactor is complete,
   tested, and documented, review the whole branch as in step 4 (checking
   against the ADR), pass `check-full` and `bioccheck`, and open one PR into
-  `devel`. A maintainer resolves conflicts and merges it with a merge
-  commit, never squash or rebase.
+  `devel`. Only a maintainer resolves that PR's conflicts, which merges
+  `devel` into the refactor branch; DESCRIPTION gets one past the higher
+  version. The maintainer merges the PR with a merge commit, never squash
+  or rebase.
 - `RELEASE_X_Y`: release fixes only. Mirrors the Bioconductor release branch.
 - `main`/`master` (stable, the GitHub default): a CI-maintained copy of the
   current release. Never commit to it, branch from it, push it, or open PRs

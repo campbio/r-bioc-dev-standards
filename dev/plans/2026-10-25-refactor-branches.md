@@ -24,17 +24,21 @@ finished refactor reaches `devel` in one final PR.
    `refactor/<topic>/<part>`: git can't hold both a ref and a directory of
    the same name. All six process steps apply unchanged, with the full PR
    checklist, including the z version bump. The hand-off shows
-   `git log refactor/<topic>..HEAD` and `git diff refactor/<topic>...HEAD`.
+   `git log <remote>/refactor/<topic>..HEAD` and
+   `git diff <remote>/refactor/<topic>...HEAD`, since Claude has no local
+   copy of the refactor branch.
 4. **No syncing.** `devel` is never merged into the refactor branch while
    it is open. Keep other `devel` changes to a minimum meanwhile.
 5. **Final PR into `devel`.** When the refactor is complete, tested, and
    documented: a fresh subagent checks the full diff against the ADR,
    `/code-review` runs on the whole branch, and `check-full` and
-   `bioccheck` pass. Then a PR from `refactor/<topic>` to `devel`. A
-   maintainer resolves any conflicts; for DESCRIPTION, the version becomes
-   one past the higher of the two. It is merged with a merge commit, never
-   squash or rebase, so the reviewed pieces stay in history for
-   `git bisect`, and only after a person approves on GitHub.
+   `bioccheck` pass. Then a PR from `refactor/<topic>` to `devel`. Only a
+   maintainer resolves its conflicts (GitHub's editor or a local merge of
+   `devel` into the refactor branch, the one exception to rule 4); for
+   DESCRIPTION, the version becomes one past the higher of the two. It is
+   merged with a merge commit, never squash or rebase, so the reviewed
+   pieces stay in history for `git bisect`, and only after a person
+   approves on GitHub.
 6. **Clean up.** A maintainer deletes the refactor branch after the merge.
    If the refactor is abandoned, the maintainer deletes the branch and a
    new ADR supersedes the old one.
@@ -52,9 +56,10 @@ finished refactor reaches `devel` in one final PR.
 - `templates/github/pull_request_template.md`: the base-branch comment
   allows `refactor/<topic>` for a piece of an approved refactor.
 - `ADOPTING.md`: an optional note for packages that use refactor branches:
-  add `refactor/**` to the R CMD check workflow's `pull_request` branches
-  so pieces get CI, and optionally a ruleset on `refactor/*` that requires
-  a PR and blocks force-pushes.
+  add `refactor/**` to the CI workflows' `pull_request` branches so pieces
+  get CI, and optionally a ruleset on `refactor/*` that requires a PR and
+  blocks force-pushes, with maintainers as bypass actors for the final
+  conflict resolution.
 - `templates/dev/adr/README.md`: a large refactor's ADR names its
   `refactor/<topic>` branch.
 

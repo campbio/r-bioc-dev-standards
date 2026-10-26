@@ -190,14 +190,17 @@ change to `dev/claude-settings.json`.
 A package that uses a `refactor/<topic>` branch for a large refactor (see
 "Large refactors" in the README) needs two settings first, made once:
 
-1. Add `refactor/**` to the `pull_request` branches of the package's
-   R CMD check workflow, next to `devel`, so PRs for each piece of the
-   refactor get CI. Merge this into `devel` by PR before the refactor
-   branch is created, so the branch inherits it.
+1. Add `refactor/**` to the `pull_request` branches of each of the
+   package's CI workflows (R CMD check, lint), next to `devel`, so PRs for
+   each piece of the refactor get CI. Merge this into `devel` by PR before
+   the refactor branch is created, so the branch inherits it.
 2. Optionally, under **Rules → Rulesets**, add a branch ruleset targeting
    `refactor/*` with **Require a pull request** and **Block force pushes**
-   turned on, so pieces can only arrive by PR. Leave **Restrict deletions**
-   off, so the maintainer can delete the branch once it merges.
+   turned on, so pieces can only arrive by PR. Add the maintainers as
+   bypass actors, so they can resolve the final PR's conflicts, which
+   commits a merge of `devel` straight onto the refactor branch. Leave
+   **Restrict deletions** off, so the maintainer can delete the branch once
+   it merges.
 
 ## Updating
 

@@ -248,7 +248,8 @@ the work than the session that wrote it.
 
 Claude stops before pushing anything. It summarizes the change, lists
 anything it couldn't verify, and shows the branch's commits and full diff,
-measured from `devel` or, for refactor work, from the refactor branch.
+measured from `devel` or, for refactor work, from the shared repo's
+refactor branch as last fetched (`<remote>/refactor/<topic>`).
 It also says whether the change alters results: numbers, model output, or
 what a plot shows. You review the whole branch and either approve it or ask
 for changes, which become new or amended local commits.
@@ -266,10 +267,10 @@ output is scientifically correct, and says who checked and how in the PR.
 
 Only after your approval does the branch get pushed, followed by a PR
 against `devel`, or against the refactor branch for a piece of a refactor.
-Note that GitHub suggests the default branch (`main` or
-`master`) as the base, so change it to `devel`; a check fails any PR aimed
-at the stable branch. The PR template asks what changed, why, and how it
-was tested, and has a checklist, a link to any ADR, and a note of which
+Note that GitHub suggests the default branch (`main` or `master`) as the
+base, so change it to `devel` or the refactor branch; a check fails any PR
+aimed at the stable branch. The PR template asks what changed, why, and how
+it was tested, and has a checklist, a link to any ADR, and a note of which
 parts an AI agent wrote, so reviewers know where to look hardest. Its
 "Scientific correctness" section is for a person only; Claude never fills
 it in.
@@ -352,16 +353,19 @@ builds `devel` every night, so `devel` has to stay releasable. For these, a
    branches with the same name.)
 4. `devel` is not merged into the refactor branch while it's open. That
    keeps the process simple, so keep other changes to `devel` to a minimum
-   until the refactor lands.
+   until the refactor lands. The one exception is the final PR's conflicts,
+   below.
 5. When the refactor is complete, tested, and documented, review the whole
    branch: a fresh subagent checks the full diff against the ADR, then
    `/code-review`, `make check-full`, and `make bioccheck`. Then open one PR
-   from the refactor branch into `devel`. A maintainer resolves any
-   conflicts; if both branches bumped the version, DESCRIPTION gets one past
-   the higher of the two. A person approves the PR on GitHub, and it's
-   merged with a merge commit, never squashed or rebased, so the reviewed
-   pieces stay in `devel`'s history and `git bisect` can still find which
-   one broke something.
+   from the refactor branch into `devel`. If it conflicts, a maintainer
+   (never Claude) resolves it, in GitHub's conflict editor or by merging
+   `devel` into the refactor branch locally; either way, that merge lands on
+   the refactor branch. If both branches bumped the version, DESCRIPTION
+   gets one past the higher of the two. A person approves the PR on GitHub,
+   and it's merged with a merge commit, never squashed or rebased, so the
+   reviewed pieces stay in `devel`'s history and `git bisect` can still find
+   which one broke something.
 6. A maintainer then deletes the refactor branch. If a refactor is
    abandoned, the maintainer deletes the branch, and a new ADR supersedes
    the old one.
