@@ -69,8 +69,9 @@ finished refactor reaches `devel` in one final PR.
   the allow rule and not the `git switch -c * -*` deny rule; switching to
   an existing branch already asks; push and branch deletion stay ask
   rules.
-- Workflows: `pr-base-devel` only fails PRs into `main`/`master`, so PRs
-  into `refactor/*` and the final PR into `devel` pass.
+- Workflow logic: `pr-base-devel` only fails PRs into `main`/`master`, so
+  PRs into `refactor/*` and the final PR into `devel` pass. Only its error
+  message changes, to mention a refactor branch as a valid base.
 - Moving the `v1` tag after merge is a maintainer step.
 
 ## How it is checked

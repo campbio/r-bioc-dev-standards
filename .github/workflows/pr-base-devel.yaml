@@ -16,7 +16,7 @@ jobs:
     permissions: {}
     steps:
       - run: |
-          echo "::error::Pull requests must target devel (or a RELEASE_X_Y branch for release fixes)."
+          echo "::error::Pull requests must target devel (or a RELEASE_X_Y branch for release fixes, or a refactor/<topic> branch for a piece of a refactor)."
           echo "::error::The ${{ github.base_ref }} branch is updated automatically from the current Bioconductor release."
-          echo "::error::To fix: click Edit next to the PR title and change the base branch to devel."
+          echo "::error::To fix: click Edit next to the PR title and change the base branch to devel (or the refactor branch)."
           exit 1
